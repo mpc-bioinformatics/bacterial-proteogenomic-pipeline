@@ -14,6 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -535,13 +536,87 @@ public class CombineIdentificationResults implements Serializable {
 	
 	
 	/**
+	 * Writes out the identified  peptides to a TSV file
 	 * 
 	 * @param tsvFilename
+	 * @throws IOException
 	 */
-	public void writeIdentifiedPeptidesToTSV(String tsvFilename) {
+	public void writeIdentifiedPeptidesToTSV(String tsvFilename)
+			throws IOException {
+		BufferedWriter peptideWriter =
+				new BufferedWriter(new FileWriter(tsvFilename));
 		
+		logger.info("TSV export of peptides to " + tsvFilename);
 		
+		List<String> groupsList = new ArrayList<String>(groupFileMap.keySet());
 		
+		peptideWriter.append("\"sequence\"");
+		peptideWriter.append("\t\"seqIDs\"");
+		peptideWriter.append("\t\"accessions\"");
+		peptideWriter.append("\t\"pseudo proteins only\"");
+		peptideWriter.append("\t\"elongation of known\"");
+		peptideWriter.append("\t\"standalone\"");
+		peptideWriter.append("\t\"#identifications\"");
+		for (String groupName : groupsList) {
+			peptideWriter.append("\t\"");
+			peptideWriter.append(groupName);
+			peptideWriter.append("\"");
+		}
+		peptideWriter.append("\n");
+		
+		for (IdentifiedPeptide peptide : peptides.values()) {
+			
+			StringBuilder seqIDs = new StringBuilder();
+			StringBuilder accessions = new StringBuilder();
+			
+			Set<String> seqIdsSet = new HashSet<String>();
+			for (AbstractProtein prot : peptide.getProteins()) {
+				seqIdsSet.add(prot.getGenomeName());
+				
+				if (accessions.length() > 0) {
+					accessions.append(';');
+				}
+				
+				accessions.append(prot.getAccession());
+			}
+			
+			for (String seqID : seqIdsSet) {
+				if (seqIDs.length() > 0) {
+					seqIDs.append(';');
+				}
+				seqIDs.append(seqID);
+			}
+			
+			peptideWriter.append('"');
+			peptideWriter.append(peptide.getSequence());
+			peptideWriter.append("\"\t\"");
+			peptideWriter.append(seqIDs);
+			peptideWriter.append("\"\t\"");
+			peptideWriter.append(accessions);
+			peptideWriter.append("\"\t\"");
+			peptideWriter.append(peptide.getHasOnlyGenomeTranslations() ?
+					"true" : "false");
+			peptideWriter.append("\"\t\"");
+			peptideWriter.append(peptide.getIsElongation() ? "true" : "false");
+			peptideWriter.append("\"\t\"");
+			peptideWriter.append((peptide.getHasOnlyGenomeTranslations() &&
+					!peptide.getIsElongation()) ? "true" : "false");
+			peptideWriter.append("\"\t\"");
+			peptideWriter.append(
+					(new Integer(peptide.getNrAllIdentifications())).toString());
+			
+			for (String groupName : groupsList) {
+				peptideWriter.append("\"\t\"");
+				peptideWriter.append(
+						(new Float(getNrIdentificationsInGroup(peptide, groupName))).toString());
+			}
+			
+			peptideWriter.append("\"\n");
+		}
+		
+		peptideWriter.close();
+		
+		logger.info("TSV export finished");
 	}
 	
 	

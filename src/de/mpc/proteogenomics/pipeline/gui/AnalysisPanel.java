@@ -765,7 +765,23 @@ public class AnalysisPanel extends JPanel
 	 * Export to TSV was pressed
 	 */
 	private void exportTsvPressed() {
-		logger.warn("not yet implemented!");
+		if (results == null) {
+			logger.error("No data to export, aborting.");
+			return;
+		}
+		
+		fileChooser.setMultiSelectionEnabled(false);
+		int returnVal = fileChooser.showSaveDialog(AnalysisPanel.this);
+		
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			File file = fileChooser.getSelectedFile();
+			
+			try {
+				results.writeIdentifiedPeptidesToTSV(file.getAbsolutePath());
+			} catch (IOException e) {
+				logger.error("Could not export results", e);
+			}
+		}
 	}
 	
 	

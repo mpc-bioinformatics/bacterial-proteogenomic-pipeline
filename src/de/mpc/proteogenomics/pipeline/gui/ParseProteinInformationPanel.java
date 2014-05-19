@@ -15,7 +15,6 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.io.File;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.List;
@@ -85,7 +84,7 @@ public class ParseProteinInformationPanel extends JPanel
 		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
 		setLayout(gridBagLayout);
 		
-		JLabel labelHeader = new JLabel("Parse protein information to GFF file");
+		JLabel labelHeader = new JLabel("Parse protein information");
 		GridBagConstraints gbc_labelHeader = new GridBagConstraints();
 		gbc_labelHeader.gridwidth = 3;
 		gbc_labelHeader.insets = new Insets(0, 0, 5, 0);
@@ -604,27 +603,11 @@ public class ParseProteinInformationPanel extends JPanel
 	public void actionPerformed(ActionEvent e) {
 		
 		if (e.getSource() == btnBrowseInputFile) {
-			// Handle browse input file
-			fileChooser.setMultiSelectionEnabled(false);
-			int returnVal = fileChooser.showOpenDialog(
+			GUIHelper.browseFileForField(fieldFilename, fileChooser,
 					ParseProteinInformationPanel.this);
-			
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = fileChooser.getSelectedFile();
-				
-				fieldFilename.setText(file.getAbsolutePath());
-			}
 		} else if (e.getSource() == btnBrowseOutputFile) {
-			// Handle browse output file
-			fileChooser.setMultiSelectionEnabled(false);
-			int returnVal = fileChooser.showSaveDialog(
+			GUIHelper.browseFileForField(fieldOutFilename, fileChooser,
 					ParseProteinInformationPanel.this);
-			
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = fileChooser.getSelectedFile();
-				
-				fieldOutFilename.setText(file.getAbsolutePath());
-			}
 		} else if (e.getSource() == btnTestSettings) {
 			// handle test settings pressed
 			testSettings();

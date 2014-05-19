@@ -21,7 +21,6 @@ import de.mpc.proteogenomics.pipeline.CompareAndCombineProteinInformation;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +68,7 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 	private JLabel lblOutputFastaFile;
 	private JTextField fieldOutputFastaFile;
 	private JButton btnBrowseOutputFastaFile;
+	
 	
 	/**
 	 * Create the panel.
@@ -508,9 +508,11 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 	 */
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnBrowseTargetGFF) {
-			browseFileForField(fieldTargetGFFFile);
+			GUIHelper.browseFileForField(fieldTargetGFFFile, fileChooser,
+					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnBrowseTargetFASTA) {
-			browseFileForField(fieldTargetFASTAFile);
+			GUIHelper.browseFileForField(fieldTargetFASTAFile, fileChooser,
+					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnTestTargetSettings) {
 			testTargetSettings();
 		} else if (e.getSource() == chckbxParseMappingInformation) {
@@ -525,40 +527,25 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 			btnTestMappingSettings.setEnabled(
 					chckbxParseMappingInformation.isSelected());
 		} else if (e.getSource() == btnBrowseMappingFile) {
-			browseFileForField(fieldMappingFile);
+			GUIHelper.browseFileForField(fieldMappingFile, fileChooser,
+					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnTestMappingSettings) {
 			testMappingSettings();
 		} else if (e.getSource() == btnBrowseReferenceFile) {
-			browseFileForField(fieldReferenceFastaFile);
+			GUIHelper.browseFileForField(fieldReferenceFastaFile, fileChooser,
+					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnTestReferenceSettings) {
 			testReferenceSettings();
 		} else if (e.getSource() == btnBrowseOutputGffFile) {
-			browseFileForField(fieldOutputGffFile);
+			GUIHelper.browseFileForField(fieldOutputGffFile, fileChooser,
+					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnBrowseOutputFastaFile) {
-			browseFileForField(fieldOutputFastaFile);
+			GUIHelper.browseFileForField(fieldOutputFastaFile, fileChooser,
+					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnProcess) {
 			// TODO: put a thread here, which handles the processing
 			
 			processData();
-		}
-	}
-	
-	
-	/**
-	 * Uses the fileChooser to browse a (not further filtered) file and put the
-	 * path to the file in the given {@link JTextField}.
-	 * 
-	 * @param textField
-	 */
-	private void browseFileForField(JTextField textField) {
-		fileChooser.setMultiSelectionEnabled(false);
-		int returnVal = fileChooser.showOpenDialog(
-				CompareAndCombineProteinInformationPanel.this);
-		
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = fileChooser.getSelectedFile();
-			
-			textField.setText(file.getAbsolutePath());
 		}
 	}
 	

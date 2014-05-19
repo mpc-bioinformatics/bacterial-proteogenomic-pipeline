@@ -368,13 +368,17 @@ public class CombineIdentificationResultsPanel extends JPanel
 	 */
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnKnownAddFile) {
-			browseFileForList(listKnownProteins);
+			GUIHelper.browseFileForList(
+					(DefaultListModel)listKnownProteins.getModel(),
+					fileChooser, CombineIdentificationResultsPanel.this);
 		} else if (e.getSource() == btnKnownRemove) {
-			removeSelectionFromList(listKnownProteins);
+			GUIHelper.removeSelectionFromList(listKnownProteins);
 		} else if (e.getSource() == btnPseudoAddFile) {
-			browseFileForList(listPseudoProteins);
+			GUIHelper.browseFileForList(
+					(DefaultListModel)listPseudoProteins.getModel(),
+					fileChooser, CombineIdentificationResultsPanel.this);
 		} else if (e.getSource() == btnPseudoRemoveFile) {
-			removeSelectionFromList(listPseudoProteins);
+			GUIHelper.removeSelectionFromList(listPseudoProteins);
 		} else if (e.getSource() == btnAddIdentifications) {
 			browseFileForIdentificationTable();
 		} else if (e.getSource() == btnRemoveIdentifications) {
@@ -383,9 +387,11 @@ public class CombineIdentificationResultsPanel extends JPanel
 						tableIdentifications.getSelectedRow());
 			}
 		} else if (e.getSource() == btnBrowseFASTAFile) {
-			browseFileForField(fieldFASTAfile);
+			GUIHelper.browseFileForField(fieldFASTAfile, fileChooser,
+					CombineIdentificationResultsPanel.this);
 		} else if (e.getSource() == btnBrowseResultsFile) {
-			browseFileForField(fieldResultsFile);
+			GUIHelper.browseFileForField(fieldResultsFile, fileChooser,
+					CombineIdentificationResultsPanel.this);
 		} else if (e.getSource() == btnProcess) {
 			
 			// TODO: put a thread here, which handles the processing
@@ -395,38 +401,6 @@ public class CombineIdentificationResultsPanel extends JPanel
 			processInput();
 			btnProcess.setText("Process and save");
 			btnProcess.setEnabled(true);
-		}
-	}
-	
-	
-	/**
-	 * Uses the fileChooser to browse a (not further filtered) file and put the
-	 * path into the {@link JList}
-	 * 
-	 * @param textField
-	 */
-	private void browseFileForList(JList fileList) {
-		fileChooser.setMultiSelectionEnabled(true);
-		int returnVal = fileChooser.showOpenDialog(
-				CombineIdentificationResultsPanel.this);
-		
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			for (File file : fileChooser.getSelectedFiles()) {
-				((DefaultListModel)fileList.getModel()).addElement(file.getAbsolutePath());
-			}
-		}
-	}
-	
-	
-	/**
-	 * Removes the selected entry from the given list. If nothing is selected,
-	 * nothing will be removed.
-	 * 
-	 * @param fileList
-	 */
-	private void removeSelectionFromList(JList fileList) {
-		if (fileList.getSelectedIndex() > -1) {
-			((DefaultListModel)fileList.getModel()).remove(fileList.getSelectedIndex());
 		}
 	}
 	
@@ -452,25 +426,6 @@ public class CombineIdentificationResultsPanel extends JPanel
 				((DefaultTableModel)tableIdentifications.getModel()).addRow(
 						rowData);
 			}
-		}
-	}
-	
-	
-	/**
-	 * Uses the fileChooser to browse a (not further filtered) file and put the
-	 * path to the file in the given {@link JTextField}.
-	 * 
-	 * @param textField
-	 */
-	private void browseFileForField(JTextField textField) {
-		fileChooser.setMultiSelectionEnabled(false);
-		int returnVal = fileChooser.showOpenDialog(
-				CombineIdentificationResultsPanel.this);
-		
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = fileChooser.getSelectedFile();
-			
-			textField.setText(file.getAbsolutePath());
 		}
 	}
 	

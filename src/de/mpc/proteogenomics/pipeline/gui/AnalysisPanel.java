@@ -451,12 +451,8 @@ public class AnalysisPanel extends JPanel
 				applyFilter();
 			}
 		} else if (e.getSource() == btnBrowseIdentificationsFile) {
-			fileChooser.setMultiSelectionEnabled(false);
-			int returnVal = fileChooser.showOpenDialog(AnalysisPanel.this);
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = fileChooser.getSelectedFile();
-				textIdentificationsFileName.setText(file.getAbsolutePath());
-			}
+			GUIHelper.browseFileForField(textIdentificationsFileName,
+					fileChooser, AnalysisPanel.this);
 		} else if (e.getSource() == btnAddIdentification) {
 			addIdentificationPressed();
 		} else if (e.getSource() == btnExportToGff) {

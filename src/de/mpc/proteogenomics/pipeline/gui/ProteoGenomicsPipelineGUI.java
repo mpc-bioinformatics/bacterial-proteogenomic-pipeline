@@ -72,10 +72,10 @@ public class ProteoGenomicsPipelineGUI {
 		
 		
 		tabbedPane.addTab("3. Genome Parser", null,
-				new JPanel());
+				new GenomeParserPanel(fileChooser));
 		
 		tabbedPane.addTab("4. Create Decoy DB", null,
-				new JPanel());
+				new CreateDecoyDBPanel(fileChooser));
 		
 		tabbedPane.addTab("5. Combine Identifications", null,
 				new CombineIdentificationResultsPanel(fileChooser));

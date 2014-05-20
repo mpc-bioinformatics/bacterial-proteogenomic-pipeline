@@ -16,6 +16,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
 import de.mpc.proteogenomics.pipeline.protein.GenericProtein;
@@ -955,37 +962,196 @@ public class CompareAndCombineProteinInformation {
 	}
 	
 	
+	@SuppressWarnings("static-access")
 	public static void main(String[] args) {
-		// TODO: include command line parser
 		
-		CompareAndCombineProteinInformation cacpl =
-				new CompareAndCombineProteinInformation();
+		boolean showHelp = false;
+		CommandLineParser cliParser = new GnuParser();
 		
-		int parsedTargetProteins = 
-				cacpl.getDataForTargetProteinlist(
-						"/mnt/data/uniNOBACKUP/cyanobacterium_coop/20140317-cyanobase/GFFs/genes.gff",
-						"/mnt/data/uniNOBACKUP/cyanobacterium_coop/20140317-cyanobase/proteinDBs/proteins.fasta",
-						">([^ ]*) .*");
-		logger.info("parsed from target files: " + parsedTargetProteins);
+		Options options = new Options();
+		options.addOption(OptionBuilder
+				.withArgName("help")
+                .withDescription("show help")
+                .create("help"));
 		
-		int parsedMappings = cacpl.parseAccessionMapping(
-				"/mnt/data/uniNOBACKUP/cyanobacterium_coop/20140317-cyanobase/syny3.txt",
-				"^\\S+\\s+\\S+\\s+(\\S+)\\s+\\d+\\s+.*",
-				"^(\\S+)\\s+.*");
-		logger.info("parsed mappings: " + parsedMappings);
+		options.addOption(OptionBuilder
+				.withArgName("filename")
+                .withDescription("the known proteins in GFF format (e.g. " +
+                		"from prior call of" +
+                		ParseProteinInformation.class.getCanonicalName() +
+                		"), may be called more than once")
+                .create("knownGFF"));
 		
-		cacpl.mapTargetsToReference(
-				"/mnt/data/uniNOBACKUP/cyanobacterium_coop/20140317-cyanobase/proteinDBs/uniprot_reference-c_synechocystis-20140318.fasta",
-				"^>[sptr]{2}\\|(\\S+)\\|.*",
-				"^>[sptr]{2}\\|\\S+\\|\\S+ .+ GN=(\\S+) PE=\\d+ SV=\\d+$",
-				"^>[sptr]{2}\\|\\S+\\|(.+)$");
+		options.addOption(OptionBuilder
+				.withArgName("filename")
+                .withDescription("the known proteins in FASTA format (e.g. " +
+                		"from prior call of" +
+                		ParseProteinInformation.class.getCanonicalName() +
+                		"), may be called more than once")
+                .create("knownFASTA"));
 		
-		int gffWritten = cacpl.writeToGFF(
-				"/mnt/data/uniNOBACKUP/cyanobacterium_coop/20140317-cyanobase/GFFs/genes-with_uniprot.gff");
-		logger.info(gffWritten + " proteins/genes written to GFF file");
+		options.addOption(OptionBuilder
+				.withArgName("regex")
+                .withDescription("regular expression to parse the accessions "
+                		+ "in the FASTA file of known proteins, defaults to "
+                		+ "'>([^ ]*) .*'")
+                .create("knownFASTAaccession"));
 		
-		int fastaWritten = cacpl.writeToFASTA(
-				"/mnt/data/uniNOBACKUP/cyanobacterium_coop/20140317-cyanobase/proteinDBs/proteins-with_uniprot.fasta");
-		logger.info(fastaWritten + " proteins/genes written to FASTA file");
+		
+		options.addOption(OptionBuilder
+				.withArgName("filename")
+                .withDescription("path to an accession mapping from the "
+                		+ "known accessions to the new ones")
+                .create("mappingFile"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("regex")
+                .withDescription("regular expression for the known accession "
+                		+ "in mapping file")
+                .create("mappingKnownAccession"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("regex")
+                .withDescription("regular expression for the new accession "
+                		+ "in mapping file")
+                .create("mappingNewAccession"));
+		
+		
+		options.addOption(OptionBuilder
+				.withArgName("filename")
+                .withDescription("path to the additional FASTA file")
+                .create("referenceFASTA"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("regex")
+                .withDescription("regular expression to parse the accessions "
+                		+ "in the additional FASTA file, defaults to"
+                		+ "'>([^ ]*) .*'")
+                .create("referenceFASTAaccession"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("regex")
+                .withDescription("regular expression to parse an alternative "
+                		+ "to the accessions in the additional FASTA file for "
+                		+ "mapping, like the gene name, if not given falls "
+                		+ "back to referenceFASTAaccession")
+                .create("referenceFASTAalternative"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("regex")
+                .withDescription("regular expression to parse the description "
+                		+ "in the additional FASTA file, defaults to "
+                		+ "'>[^ ]* (.*)'")
+                .create("referenceFASTAdescription"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("filename")
+                .withDescription("GFF output file")
+                .create("outputGFF"));
+		
+		options.addOption(OptionBuilder
+				.withArgName("filename")
+                .withDescription("FASTA output file")
+                .create("outputFASTA"));
+		
+		try {
+			CommandLine line = cliParser.parse( options, args );
+			
+			if ((line.getOptions().length == 0) || line.hasOption("help") ||
+					!line.hasOption("knownGFF") ||
+					!line.hasOption("knownFASTA") ||
+					!line.hasOption("referenceFASTA") ||
+					!line.hasOption("outputGFF") ||
+					!line.hasOption("outputFASTA")
+							) {
+				showHelp = true;
+			} else {
+				
+				CompareAndCombineProteinInformation cacpl =
+						new CompareAndCombineProteinInformation();
+				
+				// parse the known information
+				String knownGFF = line.getOptionValue("knownGFF");
+				String knownFASTA = line.getOptionValue("knownFASTA");
+				String knownFASTAaccession = ">([^ ]*) .*";
+				if (line.hasOption("knownFASTAaccession")) {
+					knownFASTAaccession = line.getOptionValue("knownFASTAaccession");
+				}
+				
+				int parsedTargetProteins = cacpl.getDataForTargetProteinlist(
+								knownGFF, knownFASTA, knownFASTAaccession);
+				logger.info("parsed from target files: " + parsedTargetProteins);
+				
+				
+				// parse the mapping, if all information is given
+				if (line.hasOption("mappingFile") &&
+						line.hasOption("mappingKnownAccession") &&
+						line.hasOption("mappingNewAccession")) {
+					int parsedMappings = cacpl.parseAccessionMapping(
+							line.getOptionValue("mappingFile"),
+							line.getOptionValue("mappingKnownAccession"),
+							line.getOptionValue("mappingNewAccession"));
+					logger.info("parsed mappings: " + parsedMappings);
+				} else if (line.hasOption("mappingFile") ||
+						line.hasOption("mappingKnownAccession") ||
+						line.hasOption("mappingNewAccession")) {
+					logger.error("not all information for mapping file given!");
+					return;
+				}
+				
+				
+				// parse the reference accessions
+				String referenceFASTA = line.getOptionValue("referenceFASTA");
+				String referenceFASTAaccession = ">([^ ]*) .*";
+				if (line.hasOption("referenceFASTAaccession")) {
+					referenceFASTAaccession = line.getOptionValue("referenceFASTAaccession");
+				}
+				String referenceFASTAalternative = referenceFASTAaccession; 
+				if (line.hasOption("referenceFASTAalternative")) {
+					referenceFASTAalternative = line.getOptionValue("referenceFASTAalternative");
+				}
+				String referenceFASTAdescription = ">[^ ]* (.*)";
+				if (line.hasOption("referenceFASTAdescription")) {
+					referenceFASTAdescription = line.getOptionValue("referenceFASTAdescription");
+				}
+				
+				cacpl.mapTargetsToReference(referenceFASTA,
+						referenceFASTAaccession, referenceFASTAalternative,
+						referenceFASTAdescription);
+				
+				
+				int gffWritten =
+						cacpl.writeToGFF(line.getOptionValue("outputGFF"));
+				logger.info(gffWritten + " proteins/genes written to GFF file");
+				
+				int fastaWritten =
+						cacpl.writeToFASTA(line.getOptionValue("outputFASTA"));
+				logger.info(fastaWritten + " proteins/genes written to FASTA file");
+			}
+		} catch (ParseException e) {
+			logger.error("Error while parsing the command line: " + e.getMessage());
+			showHelp = true;
+		}
+		
+		
+		if (showHelp) {
+			HelpFormatter formatter = new HelpFormatter();
+			
+			formatter.printHelp(GenomeParser.class.getSimpleName(),
+					"This tool helps to get further protein information from " +
+					"another FASTA file. For this, first a GFF file " +
+					"containing the known proteins is parsed. If a mapping " +
+					"file with information to map the accessions from the " +
+					"known proteins to the FASTA entries is available, this " +
+					"may be used, otherwise the accessions are directly " +
+					"compared." +
+					"\nOptions:",
+					options,
+					"\nCopyright (C) 2013-2014 Medizinisches Proteom-Center, " +
+					"julian.uszkoreit@rub.de" +
+					"\nThis is free software; see the source for copying " +
+					"conditions. There is ABSOLUTELY NO warranty!",
+					true);
+		}
 	}
 }

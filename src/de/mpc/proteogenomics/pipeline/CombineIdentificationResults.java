@@ -1117,7 +1117,6 @@ public class CombineIdentificationResults implements Serializable {
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
                 .withDescription("a FASTA file to get the protein sequences")
                 .create("fasta"));
 		
@@ -1133,36 +1132,31 @@ public class CombineIdentificationResults implements Serializable {
 		
 		options.addOption(OptionBuilder
 				.withArgName("regex")
-                .hasArgs()
                 .withDescription("regular expression to identify decoy"
                 		+ "accessions")
                 .create("decoy"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
                 .withDescription("path to the output file for " +
                 		"identifications from pseudo proteins only")
                 .create("outPseudo"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
                 .withDescription("path to the output file for " +
                 		"all other identifications")
                 .create("outOther"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
-                .withDescription("path to the output file for " +
-                		"the full result set")
+                .withDescription("path to save all parsed data (may be analysed"
+                		+ "in the GUI or loaded by inModel later)")
                 .create("outModel"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
-                .withDescription("path to a prior saved model")
+                .withDescription("path to a prior saved model to be loaded")
                 .create("inModel"));
 		
 		try {
@@ -1249,7 +1243,7 @@ public class CombineIdentificationResults implements Serializable {
 					"and writes the information into GFF files." +
 					"\nOptions:",
 					options,
-					"\nCopyright (C) 2013 Medizinisches Proteom-Center, " +
+					"\nCopyright (C) 2013-2014 Medizinisches Proteom-Center, " +
 					"julian.uszkoreit@rub.de" +
 					"\nThis is free software; see the source for copying " +
 					"conditions. There is ABSOLUTELY NO warranty!",

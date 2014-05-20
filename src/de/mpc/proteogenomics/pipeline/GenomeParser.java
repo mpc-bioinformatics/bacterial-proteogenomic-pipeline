@@ -765,7 +765,7 @@ public class GenomeParser {
 					"of identified proteins." +
 					"\nOptions:",
 					options,
-					"\nCopyright (C) 2013 Medizinisches Proteom-Center, " +
+					"\nCopyright (C) 2013-2014 Medizinisches Proteom-Center, " +
 					"julian.uszkoreit@rub.de" +
 					"\nThis is free software; see the source for copying " +
 					"conditions. There is ABSOLUTELY NO warranty!",

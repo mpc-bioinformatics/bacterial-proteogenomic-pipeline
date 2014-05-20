@@ -999,59 +999,70 @@ public class AnalysisPanel extends JPanel
 				Set<Integer> pepOverlap =
 						new HashSet<Integer>(protein.getSequence().length());
 				
-				if ((protein.getStart() == null) || (protein.getEnd() == null)) {
-					logger.warn("No start and end information for " +
-							protein.getAccession());
-				} else {
+				Long protStart = protein.getStart();
+				Long protEnd = protein.getEnd();
+				String protSequence = protein.getSequence();
+				
+				for (String pepId
+						: data.getProteinPeptideMap().get(protein.getAccession())) {
+					IdentifiedPeptide pep = data.getPeptides().get(pepId);
 					
-					Long protStart = protein.getStart();
-					Long protEnd = protein.getEnd();
 					if ((protStart != null) && (protEnd != null)) {
-						
-						for (String pepId
-								: data.getProteinPeptideMap().get(protein.getAccession())) {
-							IdentifiedPeptide pep = data.getPeptides().get(pepId);
+						for (Map.Entry<Long, Long> posIt
+								: pep.getProteinPositions(protein.getAccession()).entrySet()) {
 							
-							for (Map.Entry<Long, Long> posIt
-									: pep.getProteinPositions(protein.getAccession()).entrySet()) {
-								
-								if ((posIt.getKey() == null) ||
-										(posIt.getValue() == null)) {
-									continue;
-								}
-								
-								// start position in protein
-								int start = protein.getIsComplement() ?
-										(int)(protEnd - posIt.getValue()) / 3 - 1 :
-										(int)(posIt.getKey() - protStart) / 3 - 1;
-								
+							if ((posIt.getKey() == null) ||
+									(posIt.getValue() == null)) {
+								continue;
+							}
+							
+							// start position in protein
+							int start = protein.getIsComplement() ?
+									(int)(protEnd - posIt.getValue()) / 3 - 1 :
+									(int)(posIt.getKey() - protStart) / 3 - 1;
+							
+							for (int t=0; t < pep.getSequence().length(); t++) {
+								pepOverlap.add(t+start);
+							}
+						}
+					} else {
+						// no protein position information
+						
+						if ((protSequence != null) &&
+								(protein.getSequence().length() > 0)) {
+							
+							int start = protein.getSequence().indexOf(
+									pep.getSequence());
+							
+							if (start > -1) {
 								for (int t=0; t < pep.getSequence().length(); t++) {
 									pepOverlap.add(t+start);
 								}
 							}
 						}
-						
-						
 					}
 				}
 				
-				int seqLength = protein.getSequence().length();
-				for (int t=0; t < seqLength; t++) {
-					if (pepOverlap.contains(t) && !pepOverlap.contains(t-1)) {
-						sb.append("<span style=\"font-weight:bold;\">");
+				if ((protSequence != null) &&
+						(protein.getSequence().length() > 0)) {
+					int seqLength = protein.getSequence().length();
+					for (int t=0; t < seqLength; t++) {
+						if (pepOverlap.contains(t) && !pepOverlap.contains(t-1)) {
+							sb.append("<span style=\"font-weight:bold;\">");
+						}
+						
+						sb.append(protein.getSequence().charAt(t));
+						
+						if (pepOverlap.contains(t) && !pepOverlap.contains(t+1)) {
+							sb.append("</span>");
+						}
+						
+						if ((t+1)%60 == 0) {
+							sb.append("<br/>");
+						}
 					}
-					
-					sb.append(protein.getSequence().charAt(t));
-					
-					if (pepOverlap.contains(t) && !pepOverlap.contains(t+1)) {
-						sb.append("</span>");
-					}
-					
-					if ((t+1)%60 == 0) {
-						sb.append("<br/>");
-					}
+					sb.append("</div><br/>");
 				}
-				sb.append("</div><br/>");
 			}
 			
 			return sb.toString();

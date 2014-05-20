@@ -800,10 +800,6 @@ public class CombineIdentificationResults implements Serializable {
 							positionStmt.setLong(4,
 									(posIt.getValue() == null) ? -1 : posIt.getValue());
 							positionStmt.addBatch();
-							
-							if ((posIt.getKey() == null) || (posIt.getValue() == null)) {
-								logger.debug("nullposition for " + peptide.getSequence() + " " + protein.getAccession());
-							}
 						}
 					} else {
 						// add at least one "empty" positions entry
@@ -812,9 +808,6 @@ public class CombineIdentificationResults implements Serializable {
 						positionStmt.setLong(3, -1);
 						positionStmt.setLong(4, -1);
 						positionStmt.addBatch();
-						
-						logger.warn("nullposition for " + peptide.getSequence() +
-								" in " + protein.getAccession());
 					}
 				}
 				
@@ -836,8 +829,6 @@ public class CombineIdentificationResults implements Serializable {
 			
 			statement.executeBatch();
 			logger.info("peptide information saved");
-			
-			
 			
 			// save additional data
 			statement.executeUpdate("drop table if exists information");
@@ -1028,9 +1019,6 @@ public class CombineIdentificationResults implements Serializable {
 				if ((start == -1) && (end == -1)) {
 					start = null;
 					end = null;
-					logger.info("nullposition for " +
-							sequence + " in " + 
-							protein.getAccession());
 				}
 				
 				peptide.addPSM(idFile,

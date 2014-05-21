@@ -569,7 +569,7 @@ public class GenomeParser {
 		logger.info("longest protein: " + length_longest_protein);
 		logger.info("#proteins with ORF: " + proteins_with_orf);
 		logger.info("#proteins left out, because they are known: " + known_proteins);
-		logger.info("#processed FASTA entries (without decoys): " + nr_entries);
+		logger.info("#processed FASTA entries: " + nr_entries);
 		
 		return nrParsedProteins;
 	}
@@ -638,15 +638,14 @@ public class GenomeParser {
 	
 	/**
 	 * Checks whether the protein is a known database protein in the
-	 * knownProteins hash map. If it is not, write the protein to the FASTA, 
-	 * GFF and FASTA-decoy file.<br/>
+	 * knownProteins hash map. If it is not, write the protein to the FASTA and 
+	 * GFF file.
 	 * 
 	 * @param protein
 	 * @param knownProteins
 	 * @param hashWidth
 	 * @param fastaWriter
 	 * @param gffFrameWriter
-	 * @param decoyWriter
 	 * @return true, if the protein was valid to be written to the files
 	 * @throws IOException
 	 */

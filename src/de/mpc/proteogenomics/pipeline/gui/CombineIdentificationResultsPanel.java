@@ -13,13 +13,16 @@ import javax.swing.JLabel;
 import java.awt.Insets;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.swing.border.BevelBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
+import javax.swing.SwingWorker;
 
 import org.apache.log4j.Logger;
 
@@ -39,6 +42,8 @@ public class CombineIdentificationResultsPanel extends JPanel
 
 	private final static Logger logger =
 			Logger.getLogger(CombineIdentificationResultsPanel.class);
+	
+	private CombineIdentificationResultsWorker processWorker;
 	
 	private JFileChooser fileChooser;
 	
@@ -62,7 +67,7 @@ public class CombineIdentificationResultsPanel extends JPanel
 	private JTextField fieldResultsFile;
 	private JButton btnBrowseResultsFile;
 	private JButton btnProcess;
-	
+
 	
 	/**
 	 * Create the panel.
@@ -393,14 +398,11 @@ public class CombineIdentificationResultsPanel extends JPanel
 			GUIHelper.browseFileForField(fieldResultsFile, fileChooser,
 					CombineIdentificationResultsPanel.this);
 		} else if (e.getSource() == btnProcess) {
-			
-			// TODO: put a thread here, which handles the processing
-			
-			btnProcess.setEnabled(false);
-			btnProcess.setText("Processing...");
-			processInput();
-			btnProcess.setText("Process and save");
-			btnProcess.setEnabled(true);
+			setGUIToProcessing();
+			if ((processWorker == null) || (processWorker.isDone())) {
+				processWorker = new CombineIdentificationResultsWorker();
+				processWorker.execute();
+			}
 		}
 	}
 	
@@ -431,56 +433,130 @@ public class CombineIdentificationResultsPanel extends JPanel
 	
 	
 	/**
-	 * Process the information and show the results
+	 * Disables all buttons etc.
 	 */
-	private void processInput() {
-		if (fieldResultsFile.getText().trim().length() < 1) {
-			logger.error("Select a path to save the results to!");
-			return;
+	private void setGUIToProcessing() {
+		btnProcess.setEnabled(false);
+		btnProcess.setText("Processing...");
+		
+		URL imgURL = getClass().getResource("loading.gif");
+		if (imgURL != null) {
+			ImageIcon loadingIcon = new ImageIcon(imgURL);
+			btnProcess.setIcon(loadingIcon);
 		}
 		
-		CombineIdentificationResults combiner =
-				new CombineIdentificationResults();
+		listKnownProteins.setEnabled(false);
+		btnKnownAddFile.setEnabled(false);
+		btnKnownRemove.setEnabled(false);
+		listPseudoProteins.setEnabled(false);
+		btnPseudoAddFile.setEnabled(false);
+		btnPseudoRemoveFile.setEnabled(false);
+		tableIdentifications.setEnabled(false);
+		btnRemoveIdentifications.setEnabled(false);
+		btnAddIdentifications.setEnabled(false);
+		fieldDecoyRegularExpression.setEnabled(false);
+		fieldFASTAfile.setEnabled(false);
+		btnBrowseFASTAFile.setEnabled(false);
+		btnBrowseResultsFile.setEnabled(false);
+	}
+	
+	
+	/**
+	 * Enables all buttons etc.
+	 */
+	private void setGUIToIdling() {
+		btnProcess.setText("Process and save");
+		btnProcess.setEnabled(true);
+		btnProcess.setIcon(null);
 		
-		try {
-			for (int i=0; i < listKnownProteins.getModel().getSize(); i++) {
-				String fileName =
-						(String)listKnownProteins.getModel().getElementAt(i);
-				combiner.parseKnownProteinsFromGFF(fileName);
+		listKnownProteins.setEnabled(true);
+		btnKnownAddFile.setEnabled(true);
+		btnKnownRemove.setEnabled(true);
+		listPseudoProteins.setEnabled(true);
+		btnPseudoAddFile.setEnabled(true);
+		btnPseudoRemoveFile.setEnabled(true);
+		tableIdentifications.setEnabled(true);
+		btnRemoveIdentifications.setEnabled(true);
+		btnAddIdentifications.setEnabled(true);
+		fieldDecoyRegularExpression.setEnabled(true);
+		fieldFASTAfile.setEnabled(true);
+		btnBrowseFASTAFile.setEnabled(true);
+		btnBrowseResultsFile.setEnabled(true);
+	}
+	
+	
+	/**
+	 * Send the work into background after process is clicked.
+	 * 
+	 * @author julian
+	 *
+	 */
+	private class CombineIdentificationResultsWorker
+			extends SwingWorker<CombineIdentificationResults, Void> {
+		
+		@Override
+		protected CombineIdentificationResults doInBackground() {
+			setGUIToProcessing();
+			
+			if (fieldResultsFile.getText().trim().length() < 1) {
+				logger.error("Select a path to save the results to!");
+				return null;
 			}
 			
-			for (int i=0; i < listPseudoProteins.getModel().getSize(); i++) {
-				String fileName =
-						(String)listPseudoProteins.getModel().getElementAt(i);
-				combiner.parsePseudoProteinsFromGFF(fileName);
-			}
+			CombineIdentificationResults combiner =
+					new CombineIdentificationResults();
 			
-			if (fieldFASTAfile.getText().trim().length() > 0) {
-				combiner.parseProteinSequencesFromFASTA(
-						fieldFASTAfile.getText());
-			}
-			
-			// set the decoy regex, if given
-			if (fieldDecoyRegularExpression.getText().trim().length() > 0) {
-				combiner.setDecoyRegex(fieldDecoyRegularExpression.getText());
-			}
-			
-			for (int row=0;
-					row < ((DefaultTableModel)tableIdentifications.getModel()).getRowCount();
-					row++) {
-				String fileName =
-						(String)((DefaultTableModel)tableIdentifications.getModel()).getValueAt(row, 0);
-				String groupName =
-						(String)((DefaultTableModel)tableIdentifications.getModel()).getValueAt(row, 1);
+			try {
+				for (int i=0; i < listKnownProteins.getModel().getSize(); i++) {
+					String fileName =
+							(String)listKnownProteins.getModel().getElementAt(i);
+					combiner.parseKnownProteinsFromGFF(fileName);
+				}
 				
-				combiner.parseMzTab(fileName, groupName);
+				for (int i=0; i < listPseudoProteins.getModel().getSize(); i++) {
+					String fileName =
+							(String)listPseudoProteins.getModel().getElementAt(i);
+					combiner.parsePseudoProteinsFromGFF(fileName);
+				}
+				
+				if (fieldFASTAfile.getText().trim().length() > 0) {
+					combiner.parseProteinSequencesFromFASTA(
+							fieldFASTAfile.getText());
+				}
+				
+				// set the decoy regex, if given
+				if (fieldDecoyRegularExpression.getText().trim().length() > 0) {
+					combiner.setDecoyRegex(fieldDecoyRegularExpression.getText());
+				}
+				
+				for (int row=0;
+						row < ((DefaultTableModel)tableIdentifications.getModel()).getRowCount();
+						row++) {
+					String fileName =
+							(String)((DefaultTableModel)tableIdentifications.getModel()).getValueAt(row, 0);
+					String groupName =
+							(String)((DefaultTableModel)tableIdentifications.getModel()).getValueAt(row, 1);
+					
+					combiner.parseMzTab(fileName, groupName);
+				}
+				
+				combiner.saveToFile(fieldResultsFile.getText());
+			} catch (IOException e) {
+				logger.error("Problem while processing files.", e);
+				combiner = null;
+			} catch (MZTabException e) {
+				logger.error("Problem while processing mzTab file.", e);
+				combiner = null;
 			}
 			
-			combiner.saveToFile(fieldResultsFile.getText());
-		} catch (IOException e) {
-			logger.error("Problem while processing files.", e);
-		} catch (MZTabException e) {
-			logger.error("Problem while processing mzTab file.", e);
+			return combiner;
+		}
+		
+		
+		@Override
+		protected void done() {
+			setGUIToIdling();
 		}
 	}
+	
 }

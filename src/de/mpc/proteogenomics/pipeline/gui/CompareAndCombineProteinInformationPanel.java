@@ -9,11 +9,13 @@ import java.awt.Insets;
 
 import javax.swing.border.BevelBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
+import javax.swing.SwingWorker;
 
 import org.apache.log4j.Logger;
 
@@ -21,6 +23,7 @@ import de.mpc.proteogenomics.pipeline.CompareAndCombineProteinInformation;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,7 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 			Logger.getLogger(CompareAndCombineProteinInformationPanel.class);
 	
 	private JFileChooser fileChooser;
+	private CompareAndCombineProteinInformationWorker processWorker;
 	
 	private JTextField fieldTargetGFFFile;
 	private JButton btnBrowseTargetGFF;
@@ -65,7 +69,6 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 	
 	private JButton btnProcess;
 	
-	private JLabel lblOutputFastaFile;
 	private JTextField fieldOutputFastaFile;
 	private JButton btnBrowseOutputFastaFile;
 	
@@ -455,7 +458,7 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 		gbc_btnBrowseOutputGffFile.gridy = 0;
 		processPanel.add(btnBrowseOutputGffFile, gbc_btnBrowseOutputGffFile);
 		
-		lblOutputFastaFile = new JLabel("Output FASTA file");
+		JLabel lblOutputFastaFile = new JLabel("Output FASTA file");
 		GridBagConstraints gbc_lblOutputFastaFile = new GridBagConstraints();
 		gbc_lblOutputFastaFile.anchor = GridBagConstraints.EAST;
 		gbc_lblOutputFastaFile.insets = new Insets(0, 0, 5, 5);
@@ -543,9 +546,11 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 			GUIHelper.browseFileForField(fieldOutputFastaFile, fileChooser,
 					CompareAndCombineProteinInformationPanel.this);
 		} else if (e.getSource() == btnProcess) {
-			// TODO: put a thread here, which handles the processing
-			
-			processData();
+			setGUIToProcessing();
+			if ((processWorker == null) || (processWorker.isDone())) {
+				processWorker = new CompareAndCombineProteinInformationWorker();
+				processWorker.execute();
+			}
 		}
 	}
 	
@@ -630,53 +635,171 @@ public class CompareAndCombineProteinInformationPanel extends JPanel
 	
 	
 	/**
-	 * processes the data
+	 * Disables all buttons etc.
 	 */
-	private void processData() {
-		CompareAndCombineProteinInformation cacpl = new CompareAndCombineProteinInformation();
+	private void setGUIToProcessing() {
+		btnProcess.setEnabled(false);
+		btnProcess.setText("Processing...");
 		
-		int parsedTargetProteins = cacpl.getDataForTargetProteinlist(
-				fieldTargetGFFFile.getText(),
-				fieldTargetFASTAFile.getText(),
-				fieldTargetAccessionRegex.getText());
-		if (parsedTargetProteins > 0) {
-			logger.info("parsed from target files: " + parsedTargetProteins);
-		} else {
-			logger.error("No target proteins parsed from GFF and FASTA file");
-			return;
+		URL imgURL = getClass().getResource("loading.gif");
+		if (imgURL != null) {
+			ImageIcon loadingIcon = new ImageIcon(imgURL);
+			btnProcess.setIcon(loadingIcon);
 		}
 		
+		fieldTargetGFFFile.setEnabled(false);
+		btnBrowseTargetGFF.setEnabled(false);
+		fieldTargetFASTAFile.setEnabled(false);
+		btnBrowseTargetFASTA.setEnabled(false);
+		fieldTargetAccessionRegex.setEnabled(false);
+		btnTestTargetSettings.setEnabled(false);
 		
-		if (chckbxParseMappingInformation.isSelected()) {
-			int parsedMappings = cacpl.parseAccessionMapping(
-					fieldMappingFile.getText(),
-					fieldMappingRefAccessionRegex.getText(),
-					fieldMappingTargetAccessionRegex.getText());
-			if (parsedMappings > 0) {
-				logger.info("parsed mappings: " + parsedMappings);
-			} else {
-				logger.error("No mappings could be parsed.");
-				return;
+		chckbxParseMappingInformation.setEnabled(false);
+		fieldMappingFile.setEnabled(false);
+		btnBrowseMappingFile.setEnabled(false);
+		fieldMappingRefAccessionRegex.setEnabled(false);
+		fieldMappingTargetAccessionRegex.setEnabled(false);
+		btnTestMappingSettings.setEnabled(false);
+		
+		fieldReferenceFastaFile.setEnabled(false);
+		btnBrowseReferenceFile.setEnabled(false);
+		fieldReferenceAccessionRegex.setEnabled(false);
+		fieldReferenceAlternativeRegex.setEnabled(false);
+		fieldReferenceDescriptionRegex.setEnabled(false);
+		btnTestReferenceSettings.setEnabled(false);
+		
+		tableTesting.setEnabled(false);
+		
+		btnBrowseOutputGffFile.setEnabled(false);
+		fieldOutputGffFile.setEnabled(false);
+		
+		fieldOutputFastaFile.setEnabled(false);
+		btnBrowseOutputFastaFile.setEnabled(false);
+	}
+	
+	
+	/**
+	 * Enables all buttons etc.
+	 */
+	private void setGUIToIdling() {
+		btnProcess.setText("Process");
+		btnProcess.setEnabled(true);
+		btnProcess.setIcon(null);
+		
+		fieldTargetGFFFile.setEnabled(true);
+		btnBrowseTargetGFF.setEnabled(true);
+		fieldTargetFASTAFile.setEnabled(true);
+		btnBrowseTargetFASTA.setEnabled(true);
+		fieldTargetAccessionRegex.setEnabled(true);
+		btnTestTargetSettings.setEnabled(true);
+		
+		chckbxParseMappingInformation.setEnabled(true);
+		fieldMappingFile.setEnabled(
+				chckbxParseMappingInformation.isSelected());
+		btnBrowseMappingFile.setEnabled(
+				chckbxParseMappingInformation.isSelected());
+		fieldMappingRefAccessionRegex.setEnabled(
+				chckbxParseMappingInformation.isSelected());
+		fieldMappingTargetAccessionRegex.setEnabled(
+				chckbxParseMappingInformation.isSelected());
+		btnTestMappingSettings.setEnabled(
+				chckbxParseMappingInformation.isSelected());
+		
+		fieldReferenceFastaFile.setEnabled(true);
+		btnBrowseReferenceFile.setEnabled(true);
+		fieldReferenceAccessionRegex.setEnabled(true);
+		fieldReferenceAlternativeRegex.setEnabled(true);
+		fieldReferenceDescriptionRegex.setEnabled(true);
+		btnTestReferenceSettings.setEnabled(true);
+		
+		tableTesting.setEnabled(true);
+		
+		btnBrowseOutputGffFile.setEnabled(true);
+		fieldOutputGffFile.setEnabled(true);
+		
+		fieldOutputFastaFile.setEnabled(true);
+		btnBrowseOutputFastaFile.setEnabled(true);
+	}
+	
+	
+	/**
+	 * Send the work into background after process is clicked.
+	 * 
+	 * @author julian
+	 *
+	 */
+	private class CompareAndCombineProteinInformationWorker
+			extends SwingWorker<CompareAndCombineProteinInformation, Void> {
+		
+		@Override
+		protected CompareAndCombineProteinInformation doInBackground() {
+			setGUIToProcessing();
+			
+			if ((fieldTargetFASTAFile.getText().trim().length() < 1) |
+					(fieldTargetGFFFile.getText().trim().length() < 1)) {
+				logger.error("Target FASTA or GFF file not given.");
+				return null;
 			}
+			
+			if (fieldReferenceFastaFile.getText().trim().length() < 1) {
+				logger.error("Reference FASTA file not given.");
+				return null;
+			}
+			
+			CompareAndCombineProteinInformation cacpl =
+					new CompareAndCombineProteinInformation();
+			
+			int parsedTargetProteins = cacpl.getDataForTargetProteinlist(
+					fieldTargetGFFFile.getText(),
+					fieldTargetFASTAFile.getText(),
+					fieldTargetAccessionRegex.getText());
+			if (parsedTargetProteins > 0) {
+				logger.info("parsed from target files: " + parsedTargetProteins);
+			} else {
+				logger.error("No target proteins parsed from GFF and FASTA file");
+				return null;
+			}
+			
+			
+			if (chckbxParseMappingInformation.isSelected()) {
+				int parsedMappings = cacpl.parseAccessionMapping(
+						fieldMappingFile.getText(),
+						fieldMappingRefAccessionRegex.getText(),
+						fieldMappingTargetAccessionRegex.getText());
+				if (parsedMappings > 0) {
+					logger.info("parsed mappings: " + parsedMappings);
+				} else {
+					logger.error("No mappings could be parsed.");
+					return null;
+				}
+			}
+			
+			cacpl.mapTargetsToReference(
+					fieldReferenceFastaFile.getText(),
+					fieldReferenceAccessionRegex.getText(),
+					fieldReferenceAlternativeRegex.getText(),
+					fieldReferenceDescriptionRegex.getText());
+			
+			if (fieldOutputGffFile.getText().trim().length() > 0) {
+				int gffWritten = cacpl.writeToGFF(fieldOutputGffFile.getText());
+				logger.info(gffWritten + " proteins/genes written to " +
+						fieldOutputGffFile.getText());
+			}
+			
+			if (fieldOutputFastaFile.getText().trim().length() > 0) {
+				int fastaWritten =
+						cacpl.writeToFASTA(fieldOutputFastaFile.getText());
+				logger.info(fastaWritten + " proteins/genes written to " +
+						fieldOutputFastaFile.getText());
+			}
+			
+			return cacpl;
 		}
 		
-		cacpl.mapTargetsToReference(
-				fieldReferenceFastaFile.getText(),
-				fieldReferenceAccessionRegex.getText(),
-				fieldReferenceAlternativeRegex.getText(),
-				fieldReferenceDescriptionRegex.getText());
 		
-		if (fieldOutputGffFile.getText().trim().length() > 0) {
-			int gffWritten = cacpl.writeToGFF(fieldOutputGffFile.getText());
-			logger.info(gffWritten + " proteins/genes written to " +
-					fieldOutputGffFile.getText());
-		}
-		
-		if (fieldOutputFastaFile.getText().trim().length() > 0) {
-			int fastaWritten =
-					cacpl.writeToFASTA(fieldOutputFastaFile.getText());
-			logger.info(fastaWritten + " proteins/genes written to " +
-					fieldOutputFastaFile.getText());
+		@Override
+		protected void done() {
+			setGUIToIdling();
 		}
 	}
 }

@@ -16,6 +16,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 
 import javax.swing.JSplitPane;
+import javax.swing.text.DefaultCaret;
 
 
 public class ProteoGenomicsPipelineGUI {
@@ -40,23 +41,23 @@ public class ProteoGenomicsPipelineGUI {
 		mainGUIFrame.setMinimumSize(new Dimension(800, 600));
 		mainGUIFrame.setBounds(100, 100, 1200, 800);
 		mainGUIFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	    GridBagLayout gridBagLayout = new GridBagLayout();
-	    gridBagLayout.columnWidths = new int[]{0, 0};
-	    gridBagLayout.rowHeights = new int[]{0, 0};
-	    gridBagLayout.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-	    gridBagLayout.rowWeights = new double[]{1.0, Double.MIN_VALUE};
-	    mainGUIFrame.getContentPane().setLayout(gridBagLayout);
-	    
-	    
-	    JSplitPane splitPane = new JSplitPane();
-	    splitPane.setResizeWeight(0.8);
-	    splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-	    GridBagConstraints gbc_splitPane = new GridBagConstraints();
-	    gbc_splitPane.fill = GridBagConstraints.BOTH;
-	    gbc_splitPane.gridx = 0;
-	    gbc_splitPane.gridy = 0;
-	    mainGUIFrame.getContentPane().add(splitPane, gbc_splitPane);
-	    
+		GridBagLayout gridBagLayout = new GridBagLayout();
+		gridBagLayout.columnWidths = new int[]{0, 0};
+		gridBagLayout.rowHeights = new int[]{0, 0};
+		gridBagLayout.columnWeights = new double[]{1.0, Double.MIN_VALUE};
+		gridBagLayout.rowWeights = new double[]{1.0, Double.MIN_VALUE};
+		mainGUIFrame.getContentPane().setLayout(gridBagLayout);
+		
+		
+		JSplitPane splitPane = new JSplitPane();
+		splitPane.setResizeWeight(0.8);
+		splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+		GridBagConstraints gbc_splitPane = new GridBagConstraints();
+		gbc_splitPane.fill = GridBagConstraints.BOTH;
+		gbc_splitPane.gridx = 0;
+		gbc_splitPane.gridy = 0;
+		mainGUIFrame.getContentPane().add(splitPane, gbc_splitPane);
+		
 		
 		JTabbedPane tabbedPane = new JTabbedPane();
 		splitPane.setTopComponent(tabbedPane);
@@ -83,17 +84,19 @@ public class ProteoGenomicsPipelineGUI {
 				new AnalysisPanel(fileChooser));
 		
 		
-	    JScrollPane scrollPaneLogging = new JScrollPane();
-	    splitPane.setBottomComponent(scrollPaneLogging);
-	    
-	    JTextArea textArea = new JTextArea();
-	    scrollPaneLogging.setViewportView(textArea);
-	    textArea.setText("Logging...\n");
-	    
-	    JTextAreaAppender ta = new JTextAreaAppender(textArea);
-	    ta.setName("TextAreaLogger");
-	    ta.setThreshold(Level.DEBUG);
-	    Logger.getRootLogger().addAppender(ta);
+		JScrollPane scrollPaneLogging = new JScrollPane();
+		splitPane.setBottomComponent(scrollPaneLogging);
+		
+		JTextArea textArea = new JTextArea();
+		// set the automatic scrolling
+		((DefaultCaret)textArea.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+		scrollPaneLogging.setViewportView(textArea);
+		textArea.setText("Logging...\n");
+		
+		JTextAreaAppender ta = new JTextAreaAppender(textArea);
+		ta.setName("TextAreaLogger");
+		ta.setThreshold(Level.DEBUG);
+		Logger.getRootLogger().addAppender(ta);
 	}
 	
 	

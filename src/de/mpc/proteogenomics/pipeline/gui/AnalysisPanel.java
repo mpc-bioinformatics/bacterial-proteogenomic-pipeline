@@ -1,10 +1,12 @@
 package de.mpc.proteogenomics.pipeline.gui;
 
+import javax.swing.ImageIcon;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.RowFilter;
+import javax.swing.SwingWorker;
 
 import java.awt.Graphics;
 import java.awt.GridBagLayout;
@@ -43,6 +45,7 @@ import javax.swing.JButton;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 
 public class AnalysisPanel extends JPanel
@@ -53,6 +56,10 @@ public class AnalysisPanel extends JPanel
 	private final static Logger logger = Logger.getLogger(AnalysisPanel.class);
 	
 	private JFileChooser fileChooser;
+	
+	private LoadResultsWorker loadingWorker;
+	private WriteResultsWorker writingWorker;
+	private AddIdentificationsWorker addIdsWorker;
 	
 	private CombineIdentificationResults results;
 	
@@ -418,7 +425,9 @@ public class AnalysisPanel extends JPanel
 		panelAddIdentification.add(btnAddIdentification, gbc_btnAddIdentification);
 		
 		
-		deactivateAll();
+		deactivateAllButOpen();
+		tableResults.setRowSorter(null);
+		tableResults.setModel(new ResultsTableModel(null));
 	}
 	
 	
@@ -433,7 +442,9 @@ public class AnalysisPanel extends JPanel
 			openFilePressed();
 		} else if (e.getSource() == btnClose) {
 			results = null;
-			deactivateAll();
+			deactivateAllButOpen();
+			tableResults.setRowSorter(null);
+			tableResults.setModel(new ResultsTableModel(null));
 		} else if (e.getSource() == btnSave) {
 			btnOpen.setEnabled(false);
 			btnClose.setEnabled(false);
@@ -574,17 +585,39 @@ public class AnalysisPanel extends JPanel
 	/**
 	 * Deactivates all (except file opening)
 	 */
-	private void deactivateAll() {
+	private void deactivateAllButOpen() {
+		deactivateAll();
 		btnOpen.setEnabled(true);
+	}
+	
+	
+	/**
+	 * Deactivates all
+	 */
+	private void deactivateAll() {
+		btnOpen.setText("Open");
+		btnOpen.setIcon(null);
+		btnOpen.setEnabled(false);
+		
 		btnClose.setEnabled(false);
+		
+		btnSave.setText("Save");
+		btnSave.setIcon(null);
 		btnSave.setEnabled(false);
-		btnAddIdentification.setEnabled(false);
+		
+		btnExportToGff.setText("export to GFF");
+		btnExportToGff.setIcon(null);
 		btnExportToGff.setEnabled(false);
+		
+		btnExportToTsv.setText("export to TSV");
+		btnExportToTsv.setIcon(null);
 		btnExportToTsv.setEnabled(false);
 		
+		btnAddIdentification.setText("Add Identifications");
+		btnAddIdentification.setIcon(null);
+		btnAddIdentification.setEnabled(false);
+		
 		tableResults.setEnabled(false);
-		tableResults.setRowSorter(null);
-		tableResults.setModel(new ResultsTableModel(null));
 		
 		textSequenceFilter.setEnabled(false);
 		textAccessionFilter.setEnabled(false);
@@ -599,7 +632,6 @@ public class AnalysisPanel extends JPanel
 		textIdentificationsFileName.setEnabled(false);
 		btnBrowseIdentificationsFile.setEnabled(false);
 		textIdentificationsGroup.setEnabled(false);
-		btnAddIdentification.setEnabled(false);
 		
 		lblNrFilteredPeptides.setText("(nothing to filter)");
 	}
@@ -609,12 +641,27 @@ public class AnalysisPanel extends JPanel
 	 * Activates all (except file opening)
 	 */
 	private void activateAll() {
+		btnOpen.setText("Open");
+		btnOpen.setIcon(null);
 		btnOpen.setEnabled(true);
+		
 		btnClose.setEnabled(true);
+		
+		btnSave.setText("Save");
+		btnSave.setIcon(null);
 		btnSave.setEnabled(true);
-		btnAddIdentification.setEnabled(true);
+		
+		btnExportToGff.setText("export to GFF");
+		btnExportToGff.setIcon(null);
 		btnExportToGff.setEnabled(true);
+		
+		btnExportToTsv.setText("export to TSV");
+		btnExportToTsv.setIcon(null);
 		btnExportToTsv.setEnabled(true);
+		
+		btnAddIdentification.setText("Add Identifications");
+		btnAddIdentification.setIcon(null);
+		btnAddIdentification.setEnabled(true);
 		
 		tableResults.setEnabled(true);
 		tableResults.setRowSorter(tableSorter);
@@ -648,27 +695,10 @@ public class AnalysisPanel extends JPanel
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			
-			try {
-				results = CombineIdentificationResults.loadFromFile(
-								file.getAbsolutePath());
-			} catch (Exception e) {
-				results = null;
-				logger.error(
-						"Could not open results from " + file.getAbsolutePath(),
-						e);
+			if ((loadingWorker == null) || (loadingWorker.isDone())) {
+				loadingWorker = new LoadResultsWorker(file);
+				loadingWorker.execute();
 			}
-			
-			if (results != null) {
-				results.setNormalizeCounts(
-						chckbxShowNormalizedCounts.isSelected());
-			}
-		}
-		
-		if (results != null) {
-			setupTableSorterAndModel();
-			activateAll();
-		} else {
-			deactivateAll();
 		}
 	}
 	
@@ -688,12 +718,12 @@ public class AnalysisPanel extends JPanel
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			
-			try {
-				results.saveToFile(file.getAbsolutePath());
-			} catch (Exception e) {
-				logger.error(
-						"Could not save results to " + file.getAbsolutePath(),
-						e);
+			if ((writingWorker == null) || (writingWorker.isDone())) {
+				writingWorker = new WriteResultsWorker(file,
+						WriteResultsWorker.WriteModes.WRITER_SAVE,
+						btnSave,
+						this);
+				writingWorker.execute();
 			}
 		}
 	}
@@ -703,34 +733,12 @@ public class AnalysisPanel extends JPanel
 	 * Add identification button was pressed.
 	 */
 	private void addIdentificationPressed() {
-		if (results == null) {
-			logger.error("No initial data to add identifications, aborting.");
-			return;
-		}
 		
-		String fileName = textIdentificationsFileName.getText();
-		if (fileName.trim().length() < 1) {
-			logger.error("No file specified!");
-			return;
-		}
-		
-		String groupName = textIdentificationsGroup.getText();
-		if (groupName.trim().length() < 1) {
-			logger.error("No group specified!");
-			return;
-		}
-		
-		try {
-			results.parseMzTab(fileName, groupName);
-			results.setNormalizeCounts(chckbxShowNormalizedCounts.isSelected());
-			
-			tableResults.setModel(new ResultsTableModel(results));
-			tableSorter = new TableRowSorter<ResultsTableModel>(
-					(ResultsTableModel)tableResults.getModel());
-			activateAll();
-		} catch (Exception e) {
-			logger.error("Error while parsing the identification file.", e);
-			e.printStackTrace();
+		if ((addIdsWorker == null) || (addIdsWorker.isDone())) {
+			addIdsWorker = new AddIdentificationsWorker(
+					textIdentificationsFileName.getText(),
+					textIdentificationsGroup.getText());
+			addIdsWorker.execute();
 		}
 	}
 	
@@ -750,12 +758,12 @@ public class AnalysisPanel extends JPanel
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			
-			try {
-				results.writeIdentifiedPeptidesToGFF(
-						file.getAbsolutePath() + "-pseudos.gff",
-						file.getAbsolutePath() + "-others.gff");
-			} catch (IOException e) {
-				logger.error("Could not export results", e);
+			if ((writingWorker == null) || (writingWorker.isDone())) {
+				writingWorker = new WriteResultsWorker(file,
+						WriteResultsWorker.WriteModes.WRITER_GFF,
+						btnExportToGff,
+						this);
+				writingWorker.execute();
 			}
 		}
 	}
@@ -776,10 +784,12 @@ public class AnalysisPanel extends JPanel
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			
-			try {
-				results.writeIdentifiedPeptidesToTSV(file.getAbsolutePath());
-			} catch (IOException e) {
-				logger.error("Could not export results", e);
+			if ((writingWorker == null) || (writingWorker.isDone())) {
+				writingWorker = new WriteResultsWorker(file,
+						WriteResultsWorker.WriteModes.WRITER_TSV,
+						btnExportToTsv,
+						this);
+				writingWorker.execute();
 			}
 		}
 	}
@@ -806,6 +816,224 @@ public class AnalysisPanel extends JPanel
 		}
 		
 		panelStatistics.repaint();
+	}
+	
+	
+	/**
+	 * Processes the loading in the background.
+	 * 
+	 * @author julian
+	 */
+	private class LoadResultsWorker
+			extends SwingWorker<CombineIdentificationResults, Void> {
+		
+		File file;
+		
+		protected LoadResultsWorker(File resultsFile) {
+			this.file = resultsFile;
+		}
+		
+		
+		@Override
+		protected CombineIdentificationResults doInBackground() {
+			deactivateAll();
+			
+			btnOpen.setEnabled(false);
+			btnOpen.setText("Loading...");
+			URL imgURL = getClass().getResource("loading.gif");
+			if (imgURL != null) {
+				ImageIcon loadingIcon = new ImageIcon(imgURL);
+				btnOpen.setIcon(loadingIcon);
+			}
+			
+			CombineIdentificationResults data = null;
+			try {
+				data = CombineIdentificationResults.loadFromFile(
+								file.getAbsolutePath());
+			} catch (Exception e) {
+				data = null;
+				logger.error(
+						"Could not open results from " + file.getAbsolutePath(),
+						e);
+			}
+			
+			return data;
+		}
+		
+		
+		@Override
+		protected void done() {
+			try {
+				results = get();
+			} catch (Exception e) {
+				results = null;
+				logger.error("Error while loading results.", e);
+			}
+			
+			if (results != null) {
+				results.setNormalizeCounts(
+						chckbxShowNormalizedCounts.isSelected());
+				
+				setupTableSorterAndModel();
+				activateAll();
+			} else {
+				deactivateAllButOpen();
+			}
+		}
+	}
+	
+	
+	/**
+	 * Processes the writing of data in the background.
+	 * 
+	 * @author julian
+	 */
+	private static class WriteResultsWorker
+			extends SwingWorker<Void, Void> {
+		
+		enum WriteModes {
+			WRITER_SAVE,
+			WRITER_GFF,
+			WRITER_TSV
+		}
+		
+		File file;
+		WriteModes writeMode;
+		AnalysisPanel parent;
+		JButton button;
+		
+		protected WriteResultsWorker(File file, WriteModes writeMode,
+				JButton button, AnalysisPanel parent) {
+			this.file = file;
+			this.writeMode = writeMode;
+			this.button = button;
+			this.parent = parent;
+		}
+		
+		
+		@Override
+		protected Void doInBackground() {
+			parent.deactivateAll();
+			
+			button.setEnabled(false);
+			button.setText("Writing...");
+			URL imgURL = getClass().getResource("loading.gif");
+			if (imgURL != null) {
+				ImageIcon loadingIcon = new ImageIcon(imgURL);
+				button.setIcon(loadingIcon);
+			}
+			
+			try {
+				switch (writeMode) {
+				case WRITER_SAVE:
+					parent.results.saveToFile(file.getAbsolutePath());
+					break;
+					
+				case WRITER_GFF:
+					parent.results.writeIdentifiedPeptidesToGFF(
+							file.getAbsolutePath() + "-pseudos.gff",
+							file.getAbsolutePath() + "-others.gff");
+					break;
+					
+				case WRITER_TSV:
+					parent.results.writeIdentifiedPeptidesToTSV(
+							file.getAbsolutePath());
+					break;
+				}
+			} catch (IOException e) {
+				logger.error("Error while writing file.", e);
+			}
+			
+			return null;
+		}
+		
+		
+		@Override
+		protected void done() {
+			if (parent.results != null) {
+				parent.activateAll();
+			} else {
+				parent.deactivateAllButOpen();
+			}
+		}
+	}
+	
+	
+	/**
+	 * Processes the adding in the background.
+	 * 
+	 * @author julian
+	 */
+	private class AddIdentificationsWorker
+			extends SwingWorker<Void, Void> {
+		
+		String fileName;
+		String groupName;
+		
+		protected AddIdentificationsWorker(String fileName, String groupName) {
+			this.fileName = fileName;
+			this.groupName = groupName;
+		}
+		
+		
+		@Override
+		protected Void doInBackground() {
+			deactivateAll();
+			
+			btnAddIdentification.setEnabled(false);
+			btnAddIdentification.setText("Parsing identifications...");
+			URL imgURL = getClass().getResource("loading.gif");
+			if (imgURL != null) {
+				ImageIcon loadingIcon = new ImageIcon(imgURL);
+				btnAddIdentification.setIcon(loadingIcon);
+			}
+			
+			tableResults.setRowSorter(null);
+			tableResults.setModel(new ResultsTableModel(null));
+			
+			if (results == null) {
+				logger.error("No initial data to add identifications, aborting.");
+				return null;
+			}
+			
+			if ((fileName == null) || (fileName.trim().length() < 1)) {
+				logger.error("No file specified!");
+				return null;
+			}
+			
+			if ((groupName == null) || (groupName.trim().length() < 1)) {
+				logger.error("No group specified!");
+				return null;
+			}
+			
+			try {
+				results.parseMzTab(fileName, groupName);
+			} catch (Exception e) {
+				logger.error("Error while parsing the identification file.", e);
+				e.printStackTrace();
+			}
+			
+			return null;
+		}
+		
+		
+		@Override
+		protected void done() {
+			if (results != null) {
+				results.setNormalizeCounts(chckbxShowNormalizedCounts.isSelected());
+				
+				tableResults.setModel(new ResultsTableModel(results));
+				tableSorter = new TableRowSorter<ResultsTableModel>(
+						(ResultsTableModel)tableResults.getModel());
+				
+				setupTableSorterAndModel();
+				activateAll();
+				
+				textIdentificationsFileName.setText("");
+			} else {
+				deactivateAllButOpen();
+			}
+		}
 	}
 	
 	

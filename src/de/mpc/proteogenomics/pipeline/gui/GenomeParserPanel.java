@@ -12,10 +12,13 @@ import javax.swing.JLabel;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.io.IOException;
+import java.net.URL;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JTextField;
 import javax.swing.JButton;
+import javax.swing.SwingWorker;
 
 import org.apache.log4j.Logger;
 
@@ -28,6 +31,10 @@ public class GenomeParserPanel extends JPanel implements ActionListener {
 	
 	private final static Logger logger = Logger.getLogger(GenomeParserPanel.class);
 	
+	private GenomeParserWorker parserWorker;
+	
+	private JFileChooser fileChooser;
+	
 	private JTextField textGenomeFASTA;
 	private JButton btnBrowseGenomeFASTA;
 	
@@ -39,10 +46,6 @@ public class GenomeParserPanel extends JPanel implements ActionListener {
 	
 	private JTextField textOutputBase;
 	private JButton btnBrowseOutputBasename;
-	
-	
-	private JFileChooser fileChooser;
-	
 	
 	
 	public GenomeParserPanel(JFileChooser fc) {
@@ -193,53 +196,113 @@ public class GenomeParserPanel extends JPanel implements ActionListener {
 			GUIHelper.browseFileForField(textOutputBase, fileChooser,
 					GenomeParserPanel.this);
 		} else if (e.getSource().equals(btnParseGenome)) {
-			
-			// TODO: add thread here
-			btnParseGenome.setEnabled(false);
-			parseGenome();
-			btnParseGenome.setEnabled(true);
+			setGUIToProcessing();
+			if ((parserWorker == null) || (parserWorker.isDone())) {
+				parserWorker = new GenomeParserWorker();
+				parserWorker.execute();
+			}
 		}
 	}
 	
 	
 	/**
-	 * Parses the genome file with the given settings.
+	 * Disables all buttons etc.
 	 */
-	private void parseGenome() {
-		if (textGenomeFASTA.getText().trim().length() < 1) {
-			logger.error("Please give a genome file.");
-			return;
+	private void setGUIToProcessing() {
+		btnParseGenome.setEnabled(false);
+		btnParseGenome.setText("Parsing...");
+		
+		URL imgURL = getClass().getResource("loading.gif");
+		if (imgURL != null) {
+			ImageIcon loadingIcon = new ImageIcon(imgURL);
+			btnParseGenome.setIcon(loadingIcon);
 		}
 		
-		if (textGenomeName.getText().trim().length() < 1) {
-			textGenomeName.setText("Chr");
-			logger.info("Genome name set to default " +
-					textGenomeName.getText());
-		}
+		textGenomeFASTA.setEnabled(false);
+		btnBrowseGenomeFASTA.setEnabled(false);
+		textGenomeName.setEnabled(false);
+		textKnownProteins.setEnabled(false);
+		btnBrowseKnownGFF.setEnabled(false);
+		textOutputBase.setEnabled(false);
+		btnBrowseOutputBasename.setEnabled(false);
+	}
+	
+	
+	/**
+	 * Enables all buttons etc.
+	 */
+	private void setGUIToIdling() {
+		btnParseGenome.setText("Parse Genome");
+		btnParseGenome.setEnabled(true);
+		btnParseGenome.setIcon(null);
 		
-		GenomeParser parser = new GenomeParser(textGenomeFASTA.getText(), 5,
+		textGenomeFASTA.setEnabled(true);
+		btnBrowseGenomeFASTA.setEnabled(true);
+		textGenomeName.setEnabled(true);
+		textKnownProteins.setEnabled(true);
+		btnBrowseKnownGFF.setEnabled(true);
+		textOutputBase.setEnabled(true);
+		btnBrowseOutputBasename.setEnabled(true);
+	}
+	
+	
+	/**
+	 * Send the work into background after process is clicked.
+	 * 
+	 * @author julian
+	 *
+	 */
+	private class GenomeParserWorker
+			extends SwingWorker<GenomeParser, Void> {
+		
+		@Override
+		protected GenomeParser doInBackground() {
+			setGUIToProcessing();
+			
+			if (textGenomeFASTA.getText().trim().length() < 1) {
+				logger.error("Please give a genome file.");
+				return null;
+			}
+			
+			if (textGenomeName.getText().trim().length() < 1) {
+				textGenomeName.setText("Chr");
+				logger.info("Genome name set to default " +
 						textGenomeName.getText());
-		
-		if (textKnownProteins.getText().trim().length() < 1) {
-			logger.warn("No known proteins file given! This is not critical, "
-					+ "but probably you want to enter the file from the first "
-					+ "and/or second step.");
+			}
+			
+			GenomeParser parser = new GenomeParser(textGenomeFASTA.getText(), 5,
+							textGenomeName.getText());
+			
+			if (textKnownProteins.getText().trim().length() < 1) {
+				logger.warn("No known proteins file given! This is not critical, "
+						+ "but probably you want to enter the file from the first "
+						+ "and/or second step.");
+			}
+			
+			if (textOutputBase.getText().trim().length() < 1) {
+				logger.error("No output basename given!");
+				return null;
+			}
+			
+			String outFasta = textOutputBase.getText() + ".fasta";
+			String outGFF = textOutputBase.getText();
+			
+			try {
+				parser.parseGenome(outFasta, outGFF,
+						(textKnownProteins.getText().trim().length() < 1) ?
+								null : textKnownProteins.getText());
+			} catch (IOException e) {
+				logger.error("error while parsing genome file", e);
+				return null;
+			}
+			
+			return parser;
 		}
 		
-		if (textOutputBase.getText().trim().length() < 1) {
-			logger.error("No output basename given!");
-			return;
-		}
 		
-		String outFasta = textOutputBase.getText() + ".fasta";
-		String outGFF = textOutputBase.getText();
-		
-		try {
-			parser.parseGenome(outFasta, outGFF,
-					(textKnownProteins.getText().trim().length() < 1) ?
-							null : textKnownProteins.getText());
-		} catch (IOException e) {
-			logger.error("error while parsing genome file", e);
+		@Override
+		protected void done() {
+			setGUIToIdling();
 		}
 	}
 }

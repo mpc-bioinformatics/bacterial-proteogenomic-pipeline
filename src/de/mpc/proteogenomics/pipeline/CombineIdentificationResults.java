@@ -240,7 +240,8 @@ public class CombineIdentificationResults implements Serializable {
 				Long start = protein.getStart();
 				Long end = protein.getEnd();
 				
-				if (protein.getIsComplement() != null) {
+				if ((protein.getIsComplement() != null) &&
+						(start != null) && (end != null)) {
 					if (!protein.getIsComplement()) {
 						start += Long.parseLong(psm.getStart()) * 3;
 						end = start + psm.getSequence().length() * 3;
@@ -896,8 +897,9 @@ public class CombineIdentificationResults implements Serializable {
 			// load some information
 			ResultSet rs = statement.executeQuery("select * from information");
 			while(rs.next()) {
-				if (rs.getString("variable") == "decoyRegex") {
+				if (rs.getString("variable").equals("decoyRegex")) {
 					combiner.setDecoyRegex(rs.getString("value"));
+					logger.info("decoy regex set to " + combiner.decoyRegex);
 				}
 			}
 			

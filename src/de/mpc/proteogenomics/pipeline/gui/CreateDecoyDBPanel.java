@@ -15,23 +15,30 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JTextField;
 import javax.swing.JList;
 import javax.swing.JScrollPane;
 import javax.swing.JButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.JCheckBox;
+import javax.swing.SwingWorker;
 
 public class CreateDecoyDBPanel extends JPanel implements ActionListener {
 	
 	private static final long serialVersionUID = 1L;
 	
 	private final static Logger logger = Logger.getLogger(CreateDecoyDBPanel.class);
+	
+	private CreateDecoyDBWorker processWorker;
+	
+	private JFileChooser fileChooser;
 	
 	private JList listInputFastas;
 	private JButton btnAddFastaFiles;
@@ -40,8 +47,6 @@ public class CreateDecoyDBPanel extends JPanel implements ActionListener {
 	private JButton btnBrowseOutputFasta;
 	private JButton btnCreateDecoyDb;
 	private JCheckBox chckbxCreateDecoysOnly;
-	
-	private JFileChooser fileChooser;
 	
 	public CreateDecoyDBPanel(JFileChooser fc) {
 		this.fileChooser = fc;
@@ -180,54 +185,109 @@ public class CreateDecoyDBPanel extends JPanel implements ActionListener {
 			GUIHelper.browseFileForField(textOutputFasta, fileChooser,
 					CreateDecoyDBPanel.this);
 		} else if (e.getSource().equals(btnCreateDecoyDb)) {
-			
-			// TODO: add thread
-			
-			btnBrowseOutputFasta.setEnabled(false);
-			createDB();
-			btnBrowseOutputFasta.setEnabled(true);
+			setGUIToProcessing();
+			if ((processWorker == null) || (processWorker.isDone())) {
+				processWorker = new CreateDecoyDBWorker();
+				processWorker.execute();
+			}
 		}
 		
 	}
 	
 	
 	/**
-	 * Create the DB
+	 * Disables all buttons etc.
 	 */
-	private void createDB() {
-		List<String> inFiles = new ArrayList<String>();
-		Enumeration<?> en =
-				((DefaultListModel)listInputFastas.getModel()).elements();
+	private void setGUIToProcessing() {
+		btnCreateDecoyDb.setEnabled(false);
+		btnCreateDecoyDb.setText("Creating Decoy DB...");
 		
-		while (en.hasMoreElements()) {
-			String file = (String)en.nextElement();
-			inFiles.add(file);
+		URL imgURL = getClass().getResource("loading.gif");
+		if (imgURL != null) {
+			ImageIcon loadingIcon = new ImageIcon(imgURL);
+			btnCreateDecoyDb.setIcon(loadingIcon);
 		}
 		
-		if (inFiles.size() < 1) {
-			logger.info("No FASTA input files selected.");
-			return;
-		}
+		listInputFastas.setEnabled(false);
+		btnAddFastaFiles.setEnabled(false);
+		btnRemoveFile.setEnabled(false);
+		textOutputFasta.setEnabled(false);
+		btnBrowseOutputFasta.setEnabled(false);
+		chckbxCreateDecoysOnly.setEnabled(false);
+	}
+	
+	
+	/**
+	 * Enables all buttons etc.
+	 */
+	private void setGUIToIdling() {
+		btnCreateDecoyDb.setText("Create Decoy DB");
+		btnCreateDecoyDb.setEnabled(true);
+		btnCreateDecoyDb.setIcon(null);
 		
-		if (textOutputFasta.getText().trim().length() < 1) {
-			logger.info("No output file selected.");
-			return;
-		}
+		listInputFastas.setEnabled(true);
+		btnAddFastaFiles.setEnabled(true);
+		btnRemoveFile.setEnabled(true);
+		textOutputFasta.setEnabled(true);
+		btnBrowseOutputFasta.setEnabled(true);
+		chckbxCreateDecoysOnly.setEnabled(true);
+	}
+	
+	
+	/**
+	 * Send the work into background after process is clicked.
+	 * 
+	 * @author julian
+	 *
+	 */
+	private class CreateDecoyDBWorker
+			extends SwingWorker<Void, Void> {
 		
-		String fastaOut = textOutputFasta.getText();
-		boolean decoyOnly = chckbxCreateDecoysOnly.isSelected();
-		
-		try {
-			if (decoyOnly) {
-				logger.info("Creating decoy database only.");
-				CreateDecoyDB.createDecoyDatabase(inFiles, null, fastaOut);
-			} else {
-				logger.info("Creating concatenation of target and decoy entries.");
-				CreateDecoyDB.createDecoyDatabase(inFiles, fastaOut, null);
+		@Override
+		protected Void doInBackground() {
+			setGUIToProcessing();
+			
+			List<String> inFiles = new ArrayList<String>();
+			Enumeration<?> en =
+					((DefaultListModel)listInputFastas.getModel()).elements();
+			
+			while (en.hasMoreElements()) {
+				String file = (String)en.nextElement();
+				inFiles.add(file);
 			}
-		} catch (IOException e) {
-			logger.error("Error while creating decoy database.", e);
+			
+			if (inFiles.size() < 1) {
+				logger.info("No FASTA input files selected.");
+				return null;
+			}
+			
+			if (textOutputFasta.getText().trim().length() < 1) {
+				logger.info("No output file selected.");
+				return null;
+			}
+			
+			String fastaOut = textOutputFasta.getText();
+			boolean decoyOnly = chckbxCreateDecoysOnly.isSelected();
+			
+			try {
+				if (decoyOnly) {
+					logger.info("Creating decoy database only.");
+					CreateDecoyDB.createDecoyDatabase(inFiles, null, fastaOut);
+				} else {
+					logger.info("Creating concatenation of target and decoy entries.");
+					CreateDecoyDB.createDecoyDatabase(inFiles, fastaOut, null);
+				}
+			} catch (IOException e) {
+				logger.error("Error while creating decoy database.", e);
+			}
+			
+			return null;
 		}
 		
+		
+		@Override
+		protected void done() {
+			setGUIToIdling();
+		}
 	}
 }

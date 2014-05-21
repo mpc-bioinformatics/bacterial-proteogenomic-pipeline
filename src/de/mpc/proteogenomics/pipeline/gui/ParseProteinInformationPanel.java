@@ -1,5 +1,6 @@
 package de.mpc.proteogenomics.pipeline.gui;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -8,6 +9,7 @@ import javax.swing.JRadioButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -16,6 +18,7 @@ import java.awt.Insets;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.net.URL;
 import java.text.NumberFormat;
 import java.util.List;
 
@@ -36,6 +39,10 @@ public class ParseProteinInformationPanel extends JPanel
 	private static final long serialVersionUID = 1L;
 
 	private final static Logger logger = Logger.getLogger(ParseProteinInformationPanel.class);
+	
+	private JFileChooser fileChooser;
+	
+	private ParseProteinInformationWorker processWorker;
 	
 	private JTextField fieldFilename;
 	private JButton btnBrowseInputFile;
@@ -67,8 +74,6 @@ public class ParseProteinInformationPanel extends JPanel
 	private JTable tableTesting;
 	
 	private JButton btnProcess;
-	
-	private JFileChooser fileChooser;
 	
 	
 	/**
@@ -613,33 +618,20 @@ public class ParseProteinInformationPanel extends JPanel
 			testSettings();
 		} else if (e.getSource() == btnProcess) {
 			// handle process pressed
-			
-			// TODO: put a thread here, which handles the processing
-			
-			btnProcess.setEnabled(false);
-			if (rdbtnTsvCsvFile.isSelected()) {
-				processTsvCsvFile();
-			} else if (rdbtnFastaFile.isSelected()) {
-				processFASTAFile();
+			setGUIToProcessing();
+			if ((processWorker == null) || (processWorker.isDone())) {
+				if (rdbtnTsvCsvFile.isSelected()) {
+					processWorker = new ParseProteinInformationWorker(false);
+				} else if (rdbtnFastaFile.isSelected()) {
+					processWorker = new ParseProteinInformationWorker(true);
+				}
+				
+				processWorker.execute();
 			}
-			btnProcess.setEnabled(true);
+			
 		} else if ((e.getSource() == rdbtnFastaFile) ||
 				(e.getSource() == rdbtnTsvCsvFile)) {
-			fieldSeparator.setEnabled(rdbtnTsvCsvFile.isSelected());
-			fieldAccessionCol.setEnabled(rdbtnTsvCsvFile.isSelected());
-			fieldDescriptionCol.setEnabled(rdbtnTsvCsvFile.isSelected());
-			fieldGenomeNameCol.setEnabled(rdbtnTsvCsvFile.isSelected());
-			fieldStartCol.setEnabled(rdbtnTsvCsvFile.isSelected());
-			fieldEndCol.setEnabled(rdbtnTsvCsvFile.isSelected());
-			fieldStrandCol.setEnabled(rdbtnTsvCsvFile.isSelected());
-			
-			fieldGenomeName.setEnabled(rdbtnFastaFile.isSelected());
-			fieldAccessionRegex.setEnabled(rdbtnFastaFile.isSelected());
-			fieldDescriptionRegex.setEnabled(rdbtnFastaFile.isSelected());
-			fieldStartRegex.setEnabled(rdbtnFastaFile.isSelected());
-			fieldEndRegex.setEnabled(rdbtnFastaFile.isSelected());
-			fieldForwardRegex.setEnabled(rdbtnFastaFile.isSelected());
-			fieldComplementRegex.setEnabled(rdbtnFastaFile.isSelected());
+			tsvFastaSwitch();
 		}
 	}
 	
@@ -769,76 +761,221 @@ public class ParseProteinInformationPanel extends JPanel
 	
 	
 	/**
-	 * Process a TSV/CSV file
+	 * Activate/deactivate fields due to switching, what the input file is.
 	 */
-	private void processTsvCsvFile() {
-		logger.info("start processing CSV/TSV file");
-		try {
-			Integer accessionCol;
-			Integer descriptionCol;
-			Integer genomeCol;
-			Integer startCol;
-			Integer endCol;
-			Integer strandCol;
-			
-			accessionCol = Integer.parseInt(fieldAccessionCol.getText());
-			descriptionCol = Integer.parseInt(fieldDescriptionCol.getText());
-			genomeCol = Integer.parseInt(fieldGenomeNameCol.getText());
-			startCol = Integer.parseInt(fieldStartCol.getText());
-			endCol = Integer.parseInt(fieldEndCol.getText());
-			strandCol = Integer.parseInt(fieldStrandCol.getText());
-			
-			ParseProteinInformation parser =
-					new ParseProteinInformation(
-							accessionCol, descriptionCol, genomeCol, startCol,
-							endCol, strandCol);
-			
-			String separatorString = fieldSeparator.getText();
-			if (separatorString.startsWith("\\")) {
-				if (separatorString.startsWith("\\t")) {
-					separatorString = "\t";
-				} else if (separatorString.startsWith("\\b")) {
-					separatorString = "\b";
-				} else if (separatorString.startsWith("\\n")) {
-					separatorString = "\n";
-				} else if (separatorString.startsWith("\\r")) {
-					separatorString = "\r";
-				} else if (separatorString.startsWith("\\f")) {
-					separatorString = "\f";
-				}
-			}
-			parser.setSeparator(separatorString.charAt(0));
-			
-			parser.parseTXTFile(fieldFilename.getText(),
-					fieldOutFilename.getText());
-		} catch (NumberFormatException e) {
-			logger.error("Could not parse setting", e);
-		} catch (IOException e) {
-			logger.error("Could not parse file", e);
-		}
+	private void tsvFastaSwitch() {
+		fieldSeparator.setEnabled(rdbtnTsvCsvFile.isSelected());
+		fieldAccessionCol.setEnabled(rdbtnTsvCsvFile.isSelected());
+		fieldDescriptionCol.setEnabled(rdbtnTsvCsvFile.isSelected());
+		fieldGenomeNameCol.setEnabled(rdbtnTsvCsvFile.isSelected());
+		fieldStartCol.setEnabled(rdbtnTsvCsvFile.isSelected());
+		fieldEndCol.setEnabled(rdbtnTsvCsvFile.isSelected());
+		fieldStrandCol.setEnabled(rdbtnTsvCsvFile.isSelected());
+		
+		fieldGenomeName.setEnabled(rdbtnFastaFile.isSelected());
+		fieldAccessionRegex.setEnabled(rdbtnFastaFile.isSelected());
+		fieldDescriptionRegex.setEnabled(rdbtnFastaFile.isSelected());
+		fieldStartRegex.setEnabled(rdbtnFastaFile.isSelected());
+		fieldEndRegex.setEnabled(rdbtnFastaFile.isSelected());
+		fieldForwardRegex.setEnabled(rdbtnFastaFile.isSelected());
+		fieldComplementRegex.setEnabled(rdbtnFastaFile.isSelected());
 	}
 	
 	
 	/**
-	 * Process a FASTA file
+	 * Disables all buttons etc.
 	 */
-	private void processFASTAFile() {
-		logger.info("start processing FASTA file");
+	private void setGUIToProcessing() {
+		btnProcess.setEnabled(false);
+		btnProcess.setText("Processing...");
 		
-		try {
-			ParseProteinInformation parser =
-					new ParseProteinInformation(
-							fieldStartRegex.getText(),
-							fieldEndRegex.getText(),
-							fieldForwardRegex.getText(),
-							fieldComplementRegex.getText(),
-							fieldAccessionRegex.getText(),
-							fieldDescriptionRegex.getText());
+		URL imgURL = getClass().getResource("loading.gif");
+		if (imgURL != null) {
+			ImageIcon loadingIcon = new ImageIcon(imgURL);
+			btnProcess.setIcon(loadingIcon);
+		}
+		
+		btnBrowseInputFile.setEnabled(false);
+		rdbtnTsvCsvFile.setEnabled(false);
+		rdbtnFastaFile.setEnabled(false);
+		btnBrowseOutputFile.setEnabled(false);
+		btnTestSettings.setEnabled(false);
+		
+		fieldFilename.setEnabled(false);
+		fieldOutFilename.setEnabled(false);
+		
+		fieldSeparator.setEnabled(false);
+	    fieldAccessionCol.setEnabled(false);
+		fieldDescriptionCol.setEnabled(false);
+		fieldGenomeNameCol.setEnabled(false);
+		fieldStartCol.setEnabled(false);
+		fieldEndCol.setEnabled(false);
+		fieldStrandCol.setEnabled(false);
+		
+		fieldGenomeName.setEnabled(false);
+		fieldAccessionRegex.setEnabled(false);
+		fieldDescriptionRegex.setEnabled(false);
+		fieldStartRegex.setEnabled(false);
+		fieldEndRegex.setEnabled(false);
+		fieldForwardRegex.setEnabled(false);
+		fieldComplementRegex.setEnabled(false);
+		
+		tableTesting.setEnabled(false);
+	}
+	
+	
+	/**
+	 * Enables all buttons etc.
+	 */
+	private void setGUIToIdling() {
+		btnProcess.setText("Process");
+		btnProcess.setEnabled(true);
+		btnProcess.setIcon(null);
+		
+		fieldFilename.setEnabled(true);
+		fieldOutFilename.setEnabled(true);
+		
+		btnBrowseInputFile.setEnabled(true);
+		rdbtnTsvCsvFile.setEnabled(true);
+		rdbtnFastaFile.setEnabled(true);
+		btnBrowseOutputFile.setEnabled(true);
+		btnTestSettings.setEnabled(true);
+		
+		tableTesting.setEnabled(true);
+		
+		tsvFastaSwitch();
+	}
+	
+	
+	/**
+	 * Send the work into background after process is clicked.
+	 * 
+	 * @author julian
+	 *
+	 */
+	private class ParseProteinInformationWorker
+			extends SwingWorker<ParseProteinInformation, Void> {
+		
+		boolean processFASTA;
+		
+		/**
+		 * 
+		 * @param processFASTA
+		 */
+		protected ParseProteinInformationWorker(boolean processFASTA) {
+			this.processFASTA = processFASTA;
+		}
+		
+		
+		@Override
+		protected ParseProteinInformation doInBackground() {
+			setGUIToProcessing();
 			
-			parser.parseFASTAFile(fieldFilename.getText(),
-					fieldOutFilename.getText(), fieldGenomeName.getText());
-		} catch (IOException e) {
-			logger.error("Could not parse file", e);
+			if (fieldFilename.getText().trim().length() < 1) {
+				logger.error("No inputfile given!");
+				return null;
+			}
+			if (fieldOutFilename.getText().trim().length() < 1) {
+				logger.error("No outputfile given!");
+				return null;
+			}
+			
+			ParseProteinInformation parser;
+			if (processFASTA) {
+				parser = processFASTAFile();
+			} else {
+				parser = processTsvCsvFile();
+			}
+			
+			return parser;
+		}
+		
+		
+		@Override
+		protected void done() {
+			setGUIToIdling();
+		}
+		
+		
+		/**
+		 * Process a TSV/CSV file
+		 */
+		private ParseProteinInformation processTsvCsvFile() {
+			logger.info("start processing CSV/TSV file");
+			try {
+				Integer accessionCol;
+				Integer descriptionCol;
+				Integer genomeCol;
+				Integer startCol;
+				Integer endCol;
+				Integer strandCol;
+				
+				accessionCol = Integer.parseInt(fieldAccessionCol.getText());
+				descriptionCol = Integer.parseInt(fieldDescriptionCol.getText());
+				genomeCol = Integer.parseInt(fieldGenomeNameCol.getText());
+				startCol = Integer.parseInt(fieldStartCol.getText());
+				endCol = Integer.parseInt(fieldEndCol.getText());
+				strandCol = Integer.parseInt(fieldStrandCol.getText());
+				
+				ParseProteinInformation parser =
+						new ParseProteinInformation(
+								accessionCol, descriptionCol, genomeCol, startCol,
+								endCol, strandCol);
+				
+				String separatorString = fieldSeparator.getText();
+				if (separatorString.startsWith("\\")) {
+					if (separatorString.startsWith("\\t")) {
+						separatorString = "\t";
+					} else if (separatorString.startsWith("\\b")) {
+						separatorString = "\b";
+					} else if (separatorString.startsWith("\\n")) {
+						separatorString = "\n";
+					} else if (separatorString.startsWith("\\r")) {
+						separatorString = "\r";
+					} else if (separatorString.startsWith("\\f")) {
+						separatorString = "\f";
+					}
+				}
+				parser.setSeparator(separatorString.charAt(0));
+				
+				parser.parseTXTFile(fieldFilename.getText(),
+						fieldOutFilename.getText());
+				
+				return parser;
+			} catch (NumberFormatException e) {
+				logger.error("Could not parse setting", e);
+			} catch (IOException e) {
+				logger.error("Could not parse file", e);
+			}
+			
+			return null;
+		}
+		
+		
+		/**
+		 * Process a FASTA file
+		 */
+		private ParseProteinInformation processFASTAFile() {
+			logger.info("start processing FASTA file");
+			
+			try {
+				ParseProteinInformation parser =
+						new ParseProteinInformation(
+								fieldStartRegex.getText(),
+								fieldEndRegex.getText(),
+								fieldForwardRegex.getText(),
+								fieldComplementRegex.getText(),
+								fieldAccessionRegex.getText(),
+								fieldDescriptionRegex.getText());
+				
+				parser.parseFASTAFile(fieldFilename.getText(),
+						fieldOutFilename.getText(), fieldGenomeName.getText());
+				return parser;
+			} catch (IOException e) {
+				logger.error("Could not parse file", e);
+			}
+			
+			return null;
 		}
 	}
 }

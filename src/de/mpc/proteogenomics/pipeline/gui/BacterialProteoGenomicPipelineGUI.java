@@ -19,7 +19,7 @@ import javax.swing.JSplitPane;
 import javax.swing.text.DefaultCaret;
 
 
-public class ProteoGenomicsPipelineGUI {
+public class BacterialProteoGenomicPipelineGUI {
 	
 	private JFrame mainGUIFrame;
 	
@@ -27,7 +27,7 @@ public class ProteoGenomicsPipelineGUI {
 	/**
 	 * Create the application.
 	 */
-	public ProteoGenomicsPipelineGUI() {
+	public BacterialProteoGenomicPipelineGUI() {
 		initialize();
 	}
 	
@@ -37,7 +37,7 @@ public class ProteoGenomicsPipelineGUI {
 	 */
 	private void initialize() {
 		mainGUIFrame = new JFrame();
-		mainGUIFrame.setTitle("Bacterial ProteoGenomics Pipeline");
+		mainGUIFrame.setTitle("Bacterial Proteogenomic Pipeline");
 		mainGUIFrame.setMinimumSize(new Dimension(800, 600));
 		mainGUIFrame.setBounds(100, 100, 1200, 800);
 		mainGUIFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -107,7 +107,7 @@ public class ProteoGenomicsPipelineGUI {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ProteoGenomicsPipelineGUI window = new ProteoGenomicsPipelineGUI();
+					BacterialProteoGenomicPipelineGUI window = new BacterialProteoGenomicPipelineGUI();
 					window.mainGUIFrame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();

@@ -1224,6 +1224,7 @@ public class AnalysisPanel extends JPanel
 				sb.append(protein.getDescription());
 				sb.append("</div><div style=\"white-space:nowrap; font-family: monospace;\">");
 				
+				// the identified positions in the protein
 				Set<Integer> pepOverlap =
 						new HashSet<Integer>(protein.getSequence().length());
 				
@@ -1271,17 +1272,62 @@ public class AnalysisPanel extends JPanel
 					}
 				}
 				
+				// the positions of the currently selected peptide in the protein
+				Set<Integer> currPepOverlap =
+						new HashSet<Integer>(peptide.getSequence().length());
+				
+				if ((protStart != null) && (protEnd != null)) {
+					for (Map.Entry<Long, Long> posIt
+							: peptide.getProteinPositions(protein.getAccession()).entrySet()) {
+						
+						if ((posIt.getKey() == null) ||
+								(posIt.getValue() == null)) {
+							continue;
+						}
+						
+						// start position in protein
+						int start = protein.getIsComplement() ?
+								(int)(protEnd - posIt.getValue()) / 3 - 1 :
+								(int)(posIt.getKey() - protStart) / 3 - 1;
+						
+						for (int t=0; t < peptide.getSequence().length(); t++) {
+							currPepOverlap.add(t+start);
+						}
+					}
+				} else {
+					// no protein position information
+					
+					if ((protSequence != null) &&
+							(protein.getSequence().length() > 0)) {
+						
+						int start = protein.getSequence().indexOf(
+								peptide.getSequence());
+						
+						if (start > -1) {
+							for (int t=0; t < peptide.getSequence().length(); t++) {
+								currPepOverlap.add(t+start);
+							}
+						}
+					}
+				}
+				
+				// remove the positions of the currently selected peptide
+				pepOverlap.removeAll(currPepOverlap);
+				
 				if ((protSequence != null) &&
 						(protein.getSequence().length() > 0)) {
 					int seqLength = protein.getSequence().length();
 					for (int t=0; t < seqLength; t++) {
-						if (pepOverlap.contains(t) && !pepOverlap.contains(t-1)) {
+						if (currPepOverlap.contains(t) && !currPepOverlap.contains(t-1)) {
+							sb.append("<span style=\"color: green; font-weight:bold;\">");
+						} else if (pepOverlap.contains(t) && !pepOverlap.contains(t-1)) {
 							sb.append("<span style=\"font-weight:bold;\">");
 						}
 						
 						sb.append(protein.getSequence().charAt(t));
 						
-						if (pepOverlap.contains(t) && !pepOverlap.contains(t+1)) {
+						if ((currPepOverlap.contains(t) && !currPepOverlap.contains(t+1)) ||
+								(pepOverlap.contains(t) && !pepOverlap.contains(t+1))) {
 							sb.append("</span>");
 						}
 						

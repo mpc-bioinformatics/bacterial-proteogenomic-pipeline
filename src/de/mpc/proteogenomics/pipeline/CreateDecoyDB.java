@@ -20,7 +20,13 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
-
+/**
+ * This class helps in generating a shuffled decoy database from a given
+ * protein database in FASTA format.
+ * 
+ * @author julian
+ *
+ */
 public class CreateDecoyDB {
 	
 	private final static Logger logger = Logger.getLogger(CreateDecoyDB.class);

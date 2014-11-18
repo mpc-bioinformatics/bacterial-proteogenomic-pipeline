@@ -17,8 +17,6 @@ import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import javax.swing.SwingWorker;
 
-import org.apache.log4j.Logger;
-
 import de.mpc.proteogenomics.pipeline.CompareAndCombineProteinInformation;
 
 import java.awt.event.ActionListener;
@@ -30,13 +28,15 @@ import java.util.Map;
 
 import javax.swing.JCheckBox;
 
+import org.apache.log4j.Logger;
+
+
 public class CompareAndCombineProteinInformationPanel extends JPanel
 		implements ActionListener {
 	
 	private static final long serialVersionUID = 1L;
 
-	private final static Logger logger =
-			Logger.getLogger(CompareAndCombineProteinInformationPanel.class);
+	private final static Logger logger = Logger.getLogger(CompareAndCombineProteinInformationPanel.class);
 	
 	private JFileChooser fileChooser;
 	private CompareAndCombineProteinInformationWorker processWorker;

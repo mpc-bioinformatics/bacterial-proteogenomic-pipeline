@@ -3,8 +3,6 @@ package de.mpc.proteogenomics.pipeline.gui;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 
-import org.apache.log4j.Logger;
-
 import de.mpc.proteogenomics.pipeline.CreateDecoyDB;
 
 import javax.swing.JLabel;
@@ -29,6 +27,9 @@ import javax.swing.JButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.JCheckBox;
 import javax.swing.SwingWorker;
+
+import org.apache.log4j.Logger;
+
 
 public class CreateDecoyDBPanel extends JPanel implements ActionListener {
 	
@@ -173,7 +174,6 @@ public class CreateDecoyDBPanel extends JPanel implements ActionListener {
 	}
 	
 	
-	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(btnAddFastaFiles)) {
 			GUIHelper.browseFileForList(

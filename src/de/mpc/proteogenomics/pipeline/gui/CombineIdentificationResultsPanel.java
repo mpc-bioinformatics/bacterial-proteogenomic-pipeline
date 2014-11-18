@@ -24,8 +24,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.SwingWorker;
 
-import org.apache.log4j.Logger;
-
 import de.mpc.proteogenomics.pipeline.CombineIdentificationResults;
 import uk.ac.ebi.pride.jmztab.utils.errors.MZTabException;
 
@@ -34,14 +32,15 @@ import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
+import org.apache.log4j.Logger;
+
 
 public class CombineIdentificationResultsPanel extends JPanel
 		implements ActionListener {
 	
 	private static final long serialVersionUID = 1L;
 
-	private final static Logger logger =
-			Logger.getLogger(CombineIdentificationResultsPanel.class);
+	private final static Logger logger = Logger.getLogger(CombineIdentificationResultsPanel.class);
 	
 	private CombineIdentificationResultsWorker processWorker;
 	

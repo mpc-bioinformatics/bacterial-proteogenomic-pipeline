@@ -12,6 +12,13 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
+
+/**
+ * A protein which is not known to be a direct genetic translation.
+ * 
+ * @author julian
+ *
+ */
 public class GenericProtein extends AbstractProtein {
 
 	/** the accession of the protein */

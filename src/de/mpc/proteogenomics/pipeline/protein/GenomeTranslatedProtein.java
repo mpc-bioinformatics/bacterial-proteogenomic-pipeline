@@ -12,10 +12,15 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 
+/**
+ * A protein which is a direct genetic translation.
+ * 
+ * @author julian
+ *
+ */
 public class GenomeTranslatedProtein extends AbstractProtein {
 	
-	private final static Logger logger =
-			Logger.getLogger(GenomeTranslatedProtein.class);
+	private final static Logger logger = Logger.getLogger(GenomeTranslatedProtein.class);
 	
 	/** the genome name of the protein */
 	private String genomeName;

@@ -48,8 +48,7 @@ import de.mpc.proteogenomics.pipeline.protein.GenericProtein;
  */
 public class CompareAndCombineProteinInformation {
 	
-	private final static Logger logger =
-			Logger.getLogger(CompareAndCombineProteinInformation.class);
+	private final static Logger logger = Logger.getLogger(CompareAndCombineProteinInformation.class);
 	
 	
 	/** the target proteins (old, unprecise locations...) */

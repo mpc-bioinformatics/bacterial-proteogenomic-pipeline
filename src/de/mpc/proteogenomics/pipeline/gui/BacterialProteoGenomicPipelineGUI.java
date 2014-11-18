@@ -9,14 +9,17 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 
 import javax.swing.JSplitPane;
 import javax.swing.text.DefaultCaret;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 
 
 public class BacterialProteoGenomicPipelineGUI {
@@ -88,6 +91,7 @@ public class BacterialProteoGenomicPipelineGUI {
 		splitPane.setBottomComponent(scrollPaneLogging);
 		
 		JTextArea textArea = new JTextArea();
+		
 		// set the automatic scrolling
 		((DefaultCaret)textArea.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 		scrollPaneLogging.setViewportView(textArea);

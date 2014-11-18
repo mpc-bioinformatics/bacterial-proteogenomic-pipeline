@@ -26,7 +26,12 @@ import de.mpc.proteogenomics.pipeline.protein.GenericProtein;
 import de.mpc.proteogenomics.pipeline.protein.GenomeTranslatedProtein;
 
 
-
+/**
+ * This class handles the naive six-frame parsing of a given genome.  
+ * 
+ * @author julian
+ *
+ */
 public class GenomeParser {
 	
 	private final static Logger logger = Logger.getLogger(GenomeParser.class);

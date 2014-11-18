@@ -67,7 +67,7 @@ public class CombineIdentificationResults implements Serializable {
 	/** the identified peptides, mapping from the sequence */
 	private Map<String, IdentifiedPeptide> peptides;
 	
-	/** maps from the protein ID to the list of peptide IDs*/
+	/** maps from the protein ID to the list of peptide IDs */
 	private Map<String, Set<String>> proteinPeptides;
 	
 	/** the regular expression for decoys */
@@ -243,10 +243,10 @@ public class CombineIdentificationResults implements Serializable {
 				if ((protein.getIsComplement() != null) &&
 						(start != null) && (end != null)) {
 					if (!protein.getIsComplement()) {
-						start += Long.parseLong(psm.getStart()) * 3;
+						start += psm.getStart() * 3;
 						end = start + psm.getSequence().length() * 3;
 					} else {
-						end -= Long.parseLong(psm.getStart()) * 3;
+						end -= psm.getStart() * 3;
 						start = end - psm.getSequence().length() * 3;
 					}
 				}

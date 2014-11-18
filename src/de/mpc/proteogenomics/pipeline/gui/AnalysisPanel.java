@@ -35,13 +35,13 @@ import javax.swing.table.TableRowSorter;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 
-import org.apache.log4j.Logger;
-
 import de.mpc.proteogenomics.pipeline.CombineIdentificationResults;
 import de.mpc.proteogenomics.pipeline.peptide.IdentifiedPeptide;
 import de.mpc.proteogenomics.pipeline.protein.AbstractProtein;
 
 import javax.swing.JButton;
+
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;

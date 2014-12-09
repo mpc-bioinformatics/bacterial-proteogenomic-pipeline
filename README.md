@@ -8,6 +8,11 @@ line or via a Java Swing GUI.
 For an exampel walkthrough, please see the wiki page (https://github.com/mpc-bioinformatics/bacterial-proteogenomic-pipeline/wiki/Exampel-Walkthrough)
 
 
+## Publication / How to cite it:
+The bacterial proteogenomic pipeline. Julian Uszkoreit, Nicole Plohnke, Sascha Rexroth, Katrin Marcus and Martin Eisenacher. BMC Genomics 2014, 15(Suppl 9):S19. doi:10.1186/1471-2164-15-S9-S19
+http://www.biomedcentral.com/1471-2164/15/S9/S19
+
+
 ## The Pipeline
 
 ### Parse Protein Information

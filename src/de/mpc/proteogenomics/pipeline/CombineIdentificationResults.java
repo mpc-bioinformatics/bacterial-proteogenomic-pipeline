@@ -216,9 +216,10 @@ public class CombineIdentificationResults implements Serializable {
 				psmParser = new PSMLineParser(pshParser.getFactory(),
 						new PositionMapping(pshParser.getFactory(), line),
 						metadata, errorList);
-				
 			} else if ((psmParser != null) && line.startsWith("PSM")) {
-				PSM psm = psmParser.getRecord(line);
+				psmParser.parse(lineNumber, line, errorList);
+				PSM psm = psmParser.getRecord();
+				
 				boolean knownProtein = false;
 				
 				if ((decoyRegex != null) && 
@@ -241,7 +242,8 @@ public class CombineIdentificationResults implements Serializable {
 				Long end = protein.getEnd();
 				
 				if ((protein.getIsComplement() != null) &&
-						(start != null) && (end != null)) {
+						(start != null) && (end != null) && 
+						(psm.getStart() != null) && (psm.getEnd() != null)) {
 					if (!protein.getIsComplement()) {
 						start += psm.getStart() * 3;
 						end = start + psm.getSequence().length() * 3;
@@ -284,6 +286,9 @@ public class CombineIdentificationResults implements Serializable {
 				proteinPeptideSet.add(peptideID);
 			}
 		}
+		
+		logger.debug("all lines done");
+		
 		fileReader.close();
 		
 		fileNrIdentifications.put(fileName, psmIDs.size());
@@ -1089,7 +1094,7 @@ public class CombineIdentificationResults implements Serializable {
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
+                .hasArg(true)
                 .withDescription("the known proteins in GFF format (e.g. " +
                 		"from prior call of" +
                 		ParseProteinInformation.class.getCanonicalName() +
@@ -1098,7 +1103,7 @@ public class CombineIdentificationResults implements Serializable {
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
+                .hasArg(true)
                 .withDescription("the pseudo proteins in GFF format (e.g. " +
                 		"from prior call of" +
                 		GenomeParser.class.getCanonicalName() +"), may " +
@@ -1107,12 +1112,13 @@ public class CombineIdentificationResults implements Serializable {
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
+				.hasArg(true)
                 .withDescription("a FASTA file to get the protein sequences")
                 .create("fasta"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
-                .hasArgs()
+                .hasArg(true)
                 .withDescription("the identified peptides in mzTab format, may " +
                 		"be called more than once, the group of the file's "
                 		+ "identifications may be given before the filename, "
@@ -1122,30 +1128,35 @@ public class CombineIdentificationResults implements Serializable {
 		
 		options.addOption(OptionBuilder
 				.withArgName("regex")
+				.hasArg(true)
                 .withDescription("regular expression to identify decoy"
                 		+ "accessions")
                 .create("decoy"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
+                .hasArg(true)
                 .withDescription("path to the output file for " +
                 		"identifications from pseudo proteins only")
                 .create("outPseudo"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
+                .hasArg(true)
                 .withDescription("path to the output file for " +
                 		"all other identifications")
                 .create("outOther"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
+                .hasArg(true)
                 .withDescription("path to save all parsed data (may be analysed"
                 		+ "in the GUI or loaded by inModel later)")
                 .create("outModel"));
 		
 		options.addOption(OptionBuilder
 				.withArgName("filename")
+                .hasArg(true)
                 .withDescription("path to a prior saved model to be loaded")
                 .create("inModel"));
 		
@@ -1180,6 +1191,8 @@ public class CombineIdentificationResults implements Serializable {
 				
 				// get protein information from fasta file
 				if (line.hasOption("fasta")) {
+					logger.debug("fastafile: " + line.getOptionValue("fasta"));
+					
 					combiner.parseProteinSequencesFromFASTA(
 							line.getOptionValue("fasta"));
 				}

@@ -245,12 +245,15 @@ public class CompareAndCombineProteinInformation {
 		if ((protein != null) && (sequence != null)) {
 			protein.setSequence(sequence.toString());
 			nrParsed++;
-			if (sequence.length() !=
-					(protein.getEnd() - protein.getStart() - 2) / 3) {
-				logger.warn("Different length in GFF and FASTA for " +
-						protein.getAccession() + ": " + 
-						(protein.getEnd() - protein.getStart() - 2) / 3 +
-						" != " + sequence.length());
+			if ((protein.getStart() != null) && (protein.getEnd() != null)) {
+				if (sequence.length() != (protein.getEnd() - protein.getStart() - 2) / 3) {
+					logger.warn("Different length in GFF and FASTA for " +
+							protein.getAccession() + ": " + 
+							(protein.getEnd() - protein.getStart() - 2) / 3 +
+							" != " + sequence.length());
+				}
+			} else {
+				logger.warn("No start/end for protein " + protein.getAccession());
 			}
 		}
 		

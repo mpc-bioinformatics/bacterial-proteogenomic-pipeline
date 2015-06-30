@@ -843,7 +843,7 @@ public class CombineIdentificationResults implements Serializable {
 								+ " value TEXT)");
 			
 			statement.executeUpdate("insert into information "
-					+ "values('version', '0.1.0')");
+					+ "values('version', '0.2.0-SNAPSHOT')");
 			
 			statement.executeUpdate("insert into information "
 					+ "values('created', '" + (new Date()).toString() + "')");

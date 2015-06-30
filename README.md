@@ -1,6 +1,8 @@
 bacterial-proteogenomic-pipeline
 ================================
 
+[![Build Status](https://travis-ci.org/mpc-bioinformatics/bacterial-proteogenomic-pipeline.svg?branch=master)](https://travis-ci.org/mpc-bioinformatics/bacterial-proteogenomic-pipeline)
+
 The Bacterial Proteogenomic Pipeline consists of several modules, which assist
 in a proteogenomics analysis. Each module can either be called by the command
 line or via a Java Swing GUI.

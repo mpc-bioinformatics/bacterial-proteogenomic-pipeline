@@ -7,7 +7,7 @@ The Bacterial Proteogenomic Pipeline consists of several modules, which assist
 in a proteogenomics analysis. Each module can either be called by the command
 line or via a Java Swing GUI.
 
-For an exampel walkthrough, please see the wiki page (https://github.com/mpc-bioinformatics/bacterial-proteogenomic-pipeline/wiki/Exampel-Walkthrough)
+For an example walkthrough, please see the wiki page (https://github.com/mpc-bioinformatics/bacterial-proteogenomic-pipeline/wiki/Example-Walkthrough)
 
 ## Download
 Download the latest released version [here](https://github.com/mpc-bioinformatics/bacterial-proteogenomic-pipeline/releases/latest)
